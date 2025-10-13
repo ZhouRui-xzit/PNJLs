@@ -1,4 +1,4 @@
-include("Pnjl_pure.jl")
+includet("Pnjl_pure.jl")
 using CSV 
 using DataFrames
 

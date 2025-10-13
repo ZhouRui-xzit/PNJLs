@@ -264,7 +264,7 @@ function Omega(phi, Phi1, Phi2, T, mu_B;
     # minimal 方案：分段 + 固定缓存网格
     Iv  = _integrate_vac_minimal(phi; Λf=Λf)
     Ith = _integrate_th_minimal(phi, Phi1, Phi2, T, mu_B; pmax=pmax)
-    println("Iv = $Iv, Ith = $Ith")  # 调试输出
+
     return chi + U + Iv + Ith
 end
 
