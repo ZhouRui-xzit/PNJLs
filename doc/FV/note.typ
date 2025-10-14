@@ -263,7 +263,60 @@ and the area element is
   Thus 
   $ 
     S = integral dd(A) = integral sqrt(E G-F^2) dd(theta)dd(phi)
-    =
+    =R^2 integral_0^(2 pi) dd(phi) 
+    integral_0^pi sin theta dd(theta) = 4 pi R^2 \ 
   $
+Next, we will calculate the second fundamental form of surface $S$.
+  $ 
+    L = hat(vb(n)) dot.c vb(r)_(theta theta) \
+    M = hat(vb(n)) dot.c vb(r)_(theta phi) \
+    N = hat(vb(n)) dot.c vb(r)_(phi phi) \ 
+  $ 
+Thus, we can get mean curvature $H$ 
+  $ 
+    H = (k_1+k_2)/2
+    = (E N - 2 F M + G L)/(2(E G - F^2)) \ 
+  $ 
+and Gaussian curvature $K$
+  $ 
+    K = (L N - M^2)/(E G -F^2) 
+  $ 
+For ellipsoid:
+  $ 
+    x = a sin theta cos phi \
+    y = b sin theta sin phi \
+    z = c cos theta \
+  $
+Thus   $ 
+    hat(vb(n))
+    = (vb(r)_theta times vb(r)_phi)/
+    abs(vb(r)_theta times vb(r)_phi)
+  $ 
+  $ 
+    vb(r)_theta 
+    &=(
+    a cos theta cos phi, b cos theta sin phi, -c sin theta) \
+    vb(r)_phi
+    &=(-a sin theta sin phi, b sin theta cos phi, 0) \
+    vb(r)_(theta theta)
+    &=(-a sin theta cos phi, -b sin theta sin phi, -c cos theta) \
+    vb(r)_(phi phi)
+    &=(-a sin theta cos phi, -b sin theta sin phi, 0) \
+    vb(r)_(theta phi)
+    &=( -a cos theta sin phi, b cos theta cos phi, 0) \
+  $
+Then, we have
+  $ 
+   E &= vb(r)_theta dot.c vb(r)_theta
+   = a^2 cos^2 theta cos^2 phi + b^2 cos^2 theta sin^2 phi + c^2 sin^2 theta \  
+   F &= vb(r)_theta dot.c vb(r)_phi
+   = (b^2 - a^2) sin theta cos theta sin phi cos phi\ 
+    G &= vb(r)_phi dot.c vb(r)_phi
+    = a^2 sin^2 theta sin^2 phi + b^2 sin^2 theta cos^2 phi \
+  $ 
+  
+  
+  
+  
   
  

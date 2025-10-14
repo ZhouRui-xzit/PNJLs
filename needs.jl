@@ -17,6 +17,7 @@ needs = [
     "ModelingToolkit",
     "DifferentialEquations",
     "MethodOfLines",
+    "MeshGrid",
 
     "DataFrames",# data and plot
     "CSV",
