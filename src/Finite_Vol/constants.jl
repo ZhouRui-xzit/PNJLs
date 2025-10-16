@@ -38,7 +38,11 @@ K_f=K_Lam5/Lambda_f^5   #  !(fm**(5))
 m0_q_f=m0_q/hc       #    !(fm**(-1))
 m0_s_f=m0_s/hc
 
-m0 = [m0_q_f, m0_q_f, m0_s_f]
+m0 = [m0_q_f, m0_q_f, m0_s_f] # 真实流夸克质量
+alpha_D = [1e10, 1e10, 1e10]  # Dirichlet boundary condition
+alpha_N = [1e-3, 1e-3, 1e-3] # Neumann boundary condition
+
+
 qf = [2/3, 1/3, 1/3] #charge of quarks
 # emm常数
 

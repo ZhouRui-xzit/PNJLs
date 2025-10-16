@@ -106,9 +106,12 @@ function main2(; mu_B::Float64 = 0.0, firstline_path::AbstractString="../../data
 end
 
 
-function main3(;T=150.0, firstline_path::AbstractString="../../data/pure/1st.txt")
-    muBs = 3.0:3.0:1200.0   # 单位：MeV
-    
+function main3(;T=131.0, firstline_path::AbstractString="../../data/pure/1st.txt")
+    muBs = 1.0:10.0:1200.0   # 单位：MeV
+    mu_ceps = range(873.0, 874.0, length=20)  # 临界点附近精细扫描
+
+    muBs = vcat(muBs, mu_ceps...)  # 合并数组
+    muBs = sort(muBs)               # 排序
     # ===== 两套典型初值（与 Fortran 一致的"相位外形"）=====
     X_CONF   = [-1.9, -1.9, -2.2, 0.0038, 0.0038]
     X_DECONF = [-0.5, -0.5, -1.8, 0.80,   0.80  ]
@@ -123,7 +126,7 @@ function main3(;T=150.0, firstline_path::AbstractString="../../data/pure/1st.txt
     # 初始用禁闭相初值
     X0 = copy(X_CONF)
     
-    data = zeros(length(muBs), 5)
+    data = zeros(length(muBs), 7)
     NewX = similar(X0)
     sol = zeros(length(muBs), 6)
     sol[:, 1] .= muBs
@@ -143,7 +146,7 @@ function main3(;T=150.0, firstline_path::AbstractString="../../data/pure/1st.txt
     end
     
     for (i, mu_B) in enumerate(muBs)
-        println("mu_B = $mu_B MeV")
+        
         
         # -------- 一阶区判据与初值切换（仅当温度低于临界点温度时） --------
         if !is_above_CEP && mu_B >= mu_1st_at_T  # 进入一阶区的高μ一侧
@@ -155,7 +158,7 @@ function main3(;T=150.0, firstline_path::AbstractString="../../data/pure/1st.txt
             end
         end
         # -----------------------------------------
-        
+        println("mu_B = $mu_B MeV")
         # 牛顿迭代/求解器
         NewX = Tmu(T/hc, mu_B/hc, X0)
         sol[i, 2:end] = NewX
@@ -167,7 +170,7 @@ function main3(;T=150.0, firstline_path::AbstractString="../../data/pure/1st.txt
         X0 .= NewX
     end
 
-    df = DataFrame(data, [:T, :mu_B, :chi21, :chi32, :chi42])
+    df = DataFrame(data, [:T, :mu_B, :P, :chi_mu, :chi2_mu2, :chi3_mu3, :chi4_mu4])
     df_sol = DataFrame(sol, [:mu_B, :phiu, :phid, :phis, :Phi, :Phi_bar])
     CSV.write("../../data/pure/FLU_T=$T.csv", df)
     CSV.write("../../data/pure/sol_T=$T.csv", df_sol)

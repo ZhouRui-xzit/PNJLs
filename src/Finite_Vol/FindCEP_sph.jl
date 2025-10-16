@@ -228,5 +228,5 @@ end
 
 # 作为脚本执行
 if abspath(PROGRAM_FILE) == @__FILE__
-    main(;R=2.0, T_min=50.0, T_max=70.0)
+    main(;R=30.0, T_min=125.0, T_max=135.0)
 end

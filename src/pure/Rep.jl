@@ -42,12 +42,12 @@ function Fluctuations(NewX, T, mu_B)
     chi2_mu2 = Dmu2Omega(NewX, T, mu_B) / T^2 # d2P/dmu2
     chi3_mu3 = Dmu3Omega(NewX, T, mu_B) /T # d3P/dmu3
     chi4_mu4 = Dmu4Omega(NewX, T, mu_B) # d4P/dmu4
-
+    P = SolveOmega(NewX, T, mu_B) / T^4
     chi21 = chi2_mu2 / chi_mu
     chi31 = chi3_mu3 / chi_mu
     chi42 = chi4_mu4 / chi2_mu2
 
-    return [T*197.33, mu_B*197.33, chi21, chi31, chi42]
+    return [T*197.33, mu_B*197.33, P, chi_mu, chi2_mu2, chi3_mu3, chi4_mu4]
 end
 
 

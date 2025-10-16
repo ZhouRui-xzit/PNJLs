@@ -229,7 +229,7 @@ end
 
 # 作为脚本执行
 if abspath(PROGRAM_FILE) == @__FILE__
-    paras = [10.0, 10.0, 30.0] #椭球参数
+    paras = [30.0, 30.0, 30.0] #椭球参数
     main(;paras=paras, T_min=120.0, T_max=135.0)
 end
     

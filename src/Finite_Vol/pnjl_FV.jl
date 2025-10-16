@@ -63,8 +63,10 @@ end
 
 function Find_IR_sph(R)
     IR = zeros(3)
+    
     for flavor = 1:3
-        mass = m0[flavor]
+        mass = alpha_N[flavor] 
+        #mass = m0[flavor]
         fWrapper(X) = [f_sph(X[1], mass, R)]  # 保证返回向量
         IR0 = [0.1]
         res = nlsolve(fWrapper, IR0, autodiff=:forward)
@@ -76,7 +78,8 @@ end
 function Find_IR_el(a, b, c)
     IR = zeros(3)
     for flavor = 1:3
-        mass = m0[flavor]
+        #mass = m0[flavor]
+        mass = alpha_N[flavor]
         fWrapper(X) = [f_el(X[1], mass, a, b, c)]  # 保证返回向量
         IR0 = [0.1]
         res = nlsolve(fWrapper, IR0, autodiff=:forward)
@@ -94,14 +97,14 @@ function get_nodes_sph(num, R)
     # 定义参数组合：每个夸克两种不同的节点配置
     configs = [
         # 真空积分节点 (从IR到Lambda_f)
-        (IR_u, Lambda_f, m0[1], "u_vacuum"),  # u夸克真空
-        (IR_d, Lambda_f, m0[2], "d_vacuum"),  # d夸克真空
-        (IR_s, Lambda_f, m0[3], "s_vacuum"),  # s夸克真空
-        
+        (IR_u, Lambda_f, alpha_N[1], "u_vacuum"),  # u夸克真空
+        (IR_d, Lambda_f, alpha_N[2], "d_vacuum"),  # d夸克真空
+        (IR_s, Lambda_f, alpha_N[3], "s_vacuum"),  # s夸克真空
+
         # 有限温度积分节点 (从IR到20.0)
-        (IR_u, 20.0, m0[1], "u_thermal"),     # u夸克有限温度
-        (IR_d, 20.0, m0[2], "d_thermal"),     # d夸克有限温度
-        (IR_s, 20.0, m0[3], "s_thermal")      # s夸克有限温度
+        (IR_u, 20.0, alpha_N[1], "u_thermal"),     # u夸克有限温度
+        (IR_d, 20.0, alpha_N[2], "d_thermal"),     # d夸克有限温度
+        (IR_s, 20.0, alpha_N[3], "s_thermal")      # s夸克有限温度
     ]
     
     # 使用字典来存储结果，便于按夸克类型和积分类型索引
@@ -134,14 +137,14 @@ function get_nodes_el(num, a, b, c)
     # 定义参数组合：每个夸克两种不同的节点配置
     configs = [
         # 真空积分节点 (从IR到Lambda_f)
-        (IR_u, Lambda_f, m0[1], "u_vacuum"),  # u夸克真空
-        (IR_d, Lambda_f, m0[2], "d_vacuum"),  # d夸克真空
-        (IR_s, Lambda_f, m0[3], "s_vacuum"),  # s夸克真空
-        
+        (IR_u, Lambda_f, alpha_N[1], "u_vacuum"),  # u夸克真空
+        (IR_d, Lambda_f, alpha_N[2], "d_vacuum"),  # d夸克真空
+        (IR_s, Lambda_f, alpha_N[3], "s_vacuum"),  # s夸克真空
+
         # 有限温度积分节点 (从IR到20.0)
-        (IR_u, 20.0, m0[1], "u_thermal"),     # u夸克有限温度
-        (IR_d, 20.0, m0[2], "d_thermal"),     # d夸克有限温度
-        (IR_s, 20.0, m0[3], "s_thermal")      # s夸克有限温度
+        (IR_u, 20.0, alpha_N[1], "u_thermal"),     # u夸克有限温度
+        (IR_d, 20.0, alpha_N[2], "d_thermal"),     # d夸克有限温度
+        (IR_s, 20.0, alpha_N[3], "s_thermal")      # s夸克有限温度
     ]
     
     # 使用字典来存储结果，便于按夸克类型和积分类型索引
