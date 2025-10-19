@@ -86,7 +86,7 @@ end
 
 
 function main_Tmu_sph()
-    Rs = [30.0, 10.0, 7.0, 5.0, 3.0, 2.0, 1.5, 0.9]
+    Rs = [30.0, 10.0, 5.0, 1.5]
     mu_B = 0.0
     Ts = 300.0:-2.0:10.0
 
@@ -96,7 +96,7 @@ function main_Tmu_sph()
     for (i, R) in enumerate(Rs)
         println("R = $R fm")
       
-        ints = get_nodes_sph(128, R)
+        ints = get_nodes_sph(128, R; modes="N")
         X0 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # 重置初始猜测
         for (j, T) in enumerate(Ts)
             idx = (i-1)*length(Ts) + j

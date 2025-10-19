@@ -296,7 +296,7 @@ end
     mid  = (b + a) / S(2)
     p  = half .* S.(x) .+ mid
     wp = half .* S.(w)
-    return sum(wp .* vacand.(p, Ref(phi), theta))
+    return sum(wp .* vacand.(p, Re(phi), theta))
 end
 
 # -------------------- 热项（窗口分段 + 固定网格） --------------------

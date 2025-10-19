@@ -61,12 +61,12 @@ function f_sph(x, mass, R) # rho_MRE for sphere
 end
 
 
-function Find_IR_sph(R)
+function Find_IR_sph(R, masses)
     IR = zeros(3)
     
     for flavor = 1:3
-        mass = alpha_N[flavor] 
-        #mass = m0[flavor]
+        mass = masses[flavor]
+        
         fWrapper(X) = [f_sph(X[1], mass, R)]  # 保证返回向量
         IR0 = [0.1]
         res = nlsolve(fWrapper, IR0, autodiff=:forward)
@@ -75,11 +75,10 @@ function Find_IR_sph(R)
     return IR
 end
 
-function Find_IR_el(a, b, c)
+function Find_IR_el(a, b, c, masses)
     IR = zeros(3)
     for flavor = 1:3
-        #mass = m0[flavor]
-        mass = alpha_N[flavor]
+        mass = masses[flavor]
         fWrapper(X) = [f_el(X[1], mass, a, b, c)]  # 保证返回向量
         IR0 = [0.1]
         res = nlsolve(fWrapper, IR0, autodiff=:forward)
@@ -91,20 +90,27 @@ end
 
 
 
-function get_nodes_sph(num, R)
-    IR_u, IR_d, IR_s = Find_IR_sph(R)  # 三种夸克的IR截断
+function get_nodes_sph(num, R ;modes="m")
+    if modes == "D"
+        masses = alpha_D
+    elseif modes == "N"
+        masses = alpha_N
+    else
+        masses = m0
+    end
+    IR_u, IR_d, IR_s = Find_IR_sph(R, masses)  # 三种夸克的IR截断
     
     # 定义参数组合：每个夸克两种不同的节点配置
     configs = [
         # 真空积分节点 (从IR到Lambda_f)
-        (IR_u, Lambda_f, alpha_N[1], "u_vacuum"),  # u夸克真空
-        (IR_d, Lambda_f, alpha_N[2], "d_vacuum"),  # d夸克真空
-        (IR_s, Lambda_f, alpha_N[3], "s_vacuum"),  # s夸克真空
+        (IR_u, Lambda_f, masses[1], "u_vacuum"),  # u夸克真空
+        (IR_d, Lambda_f, masses[2], "d_vacuum"),  # d夸克真空
+        (IR_s, Lambda_f, masses[3], "s_vacuum"),  # s夸克真空
 
         # 有限温度积分节点 (从IR到20.0)
-        (IR_u, 20.0, alpha_N[1], "u_thermal"),     # u夸克有限温度
-        (IR_d, 20.0, alpha_N[2], "d_thermal"),     # d夸克有限温度
-        (IR_s, 20.0, alpha_N[3], "s_thermal")      # s夸克有限温度
+        (IR_u, 20.0, masses[1], "u_thermal"),     # u夸克有限温度
+        (IR_d, 20.0, masses[2], "d_thermal"),     # d夸克有限温度
+        (IR_s, 20.0, masses[3], "s_thermal")      # s夸克有限温度
     ]
     
     # 使用字典来存储结果，便于按夸克类型和积分类型索引
@@ -131,20 +137,27 @@ function get_nodes_sph(num, R)
 end
 
 
-function get_nodes_el(num, a, b, c)
-    IR_u, IR_d, IR_s = Find_IR_el(a, b, c)  # 三种夸克的IR截断
-    
+function get_nodes_el(num, a, b, c; modes="m")
+    if modes == "D"
+        masses = alpha_D
+    elseif modes == "N"
+        masses = alpha_N
+    else
+        masses = m0
+    end
+    IR_u, IR_d, IR_s = Find_IR_el(a, b, c, masses)  # 三种夸克的IR截断
+
     # 定义参数组合：每个夸克两种不同的节点配置
     configs = [
         # 真空积分节点 (从IR到Lambda_f)
-        (IR_u, Lambda_f, alpha_N[1], "u_vacuum"),  # u夸克真空
-        (IR_d, Lambda_f, alpha_N[2], "d_vacuum"),  # d夸克真空
-        (IR_s, Lambda_f, alpha_N[3], "s_vacuum"),  # s夸克真空
+        (IR_u, Lambda_f, masses[1], "u_vacuum"),  # u夸克真空
+        (IR_d, Lambda_f, masses[2], "d_vacuum"),  # d夸克真空
+        (IR_s, Lambda_f, masses[3], "s_vacuum"),  # s夸克真空
 
         # 有限温度积分节点 (从IR到20.0)
-        (IR_u, 20.0, alpha_N[1], "u_thermal"),     # u夸克有限温度
-        (IR_d, 20.0, alpha_N[2], "d_thermal"),     # d夸克有限温度
-        (IR_s, 20.0, alpha_N[3], "s_thermal")      # s夸克有限温度
+        (IR_u, 20.0, masses[1], "u_thermal"),     # u夸克有限温度
+        (IR_d, 20.0, masses[2], "d_thermal"),     # d夸克有限温度
+        (IR_s, 20.0, masses[3], "s_thermal")      # s夸克有限温度
     ]
     
     # 使用字典来存储结果，便于按夸克类型和积分类型索引

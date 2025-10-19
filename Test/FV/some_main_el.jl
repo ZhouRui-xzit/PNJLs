@@ -94,7 +94,7 @@ end
 
 
 function main_Tmu_el()
-    Rs = [30.0, 10.0, 7.0, 5.0, 3.0, 2.0, 1.5, 0.9]
+    Rs = [30.0, 10.0, 5.0, 1.5]
     mu_B = 0.0
     Ts = 300.0:-2.0:10.0
 
@@ -105,11 +105,10 @@ function main_Tmu_el()
         println("R = $R fm")
         ratio = 4.0
         theta = pi / ratio  # 圆形横向截面
-        #a = abs(R * cos(theta))
-        #b = abs(R * sin(theta))
+
         a=R; b=R;
         c = 30.0
-        ints = get_nodes_el(128, a, b, c)
+        ints = get_nodes_el(128, a, b, c; modes="N")
         X0 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # 重置初始猜测
         for (j, T) in enumerate(Ts)
             idx = (i-1)*length(Ts) + j
@@ -126,34 +125,34 @@ function main_Tmu_el()
 end
 
 
-function main_Tmu_el()
- 
+
+function main_Tmu_equal_V()
     mu_B = 0.0
     Ts = 300.0:-2.0:10.0
-    as = [1.0, 3.0, 5.0, 7.0, 10.0, 30.0]
-    lens = length(Ts) * length(as)
+    V = (4/3)*pi*30.0^3
+    c = 30.0 
+    ab = (3*V)/(4*pi) / c   
+    es = [0.0, 0.99, 0.999, 0.9999, 0.99999]
+    lens = length(Ts) * length(es)
     data = zeros(lens, 7)  # T, R, phi_u, phi_d, phi_s, Phi1, Phi2
-    
-    b = 1.0
-    c = 30.0
-    for (i, a) in enumerate(as)
-        println("a = $a fm")
+    for (i, e) in enumerate(es)
+        println("e = $e ")
+        a = sqrt(ab / sqrt(1 - e^2))
+        b = sqrt(ab * sqrt(1 - e^2))
         ints = get_nodes_el(128, a, b, c)
         X0 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # 重置初始猜测
         for (j, T) in enumerate(Ts)
             idx = (i-1)*length(Ts) + j
-            
             X0 = Tmu(T/hc, mu_B/hc, X0, ints)
-            data[idx, :] = [T, a, X0...]
+            data[idx, :] = [T, e, X0...]
         end
     end
 
-    outpath = "../../data/FV/T_mu0_el_vara_N.csv"
-    df = DataFrame(data, [:T, :a, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
+    outpath = "../../data/FV/sph_T_es_el_m.csv"
+    df = DataFrame(data, [:T, :e, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")
 end
-
 
 
 
