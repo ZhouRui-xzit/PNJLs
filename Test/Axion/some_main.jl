@@ -62,9 +62,9 @@ function main_Trho()
 end
 
 function main_mu(mu_B)
-    Ts = 300:-2:50.0
+    Ts = 300:-2:1.0
 
-    thetas = [0.0, pi/3, 2*pi/3]
+    thetas = [0.0]
     # X0: 8 维
     X0 = [0.01, 0.01, 0.40, 0.01, 0.01, 0.01, 0.8, 0.8]
     data = zeros(length(Ts), 7)
@@ -86,18 +86,20 @@ function main_rho(T)
     rhos2 = reverse(rhos2)
     rhos = vcat(rhos1, rhos2)
 
-    theta = 0.0
+    theta = pi/3
 
     # X0: 11 维
     X0 = [1.8, 1.8, 2.2, 0.01, 0.01, 0.01, 0.1, 0.1, 320/hc, 320/hc, 320/hc]
-    data = zeros(length(rhos), 3)
+    data = zeros(length(rhos), length(X0) + 2)
     for (i, rho_B) in enumerate(rhos)
         println("T = $T, rho_B = $rho_B")
         X0 = Trho(T/hc, rho_B, X0, theta)
-        mu = X0[9] * hc    # 仍写到 :mu_B 列名（保持原输出接口）
-        data[i, :] = [T, rho_B, mu]
+
+        data[i, 1] = T
+        data[i, 2] = rho_B
+        data[i, 3:end] = X0
     end
-    df = DataFrame(data, [:T, :rho_B, :mu_B])
+    df = DataFrame(data, [:T, :rho_B, :sigma_u, :sigma_d, :sigma_s, :eta_u, :eta_d, :eta_s, :Phi1, :Phi2, :mu_u, :mu_d, :mu_s])
     CSV.write("../../data/axion/T=$T.dat", df)
 end
 
@@ -129,13 +131,13 @@ function main_theta()
 
     # 物理参数（外部用 MeV；内部调用时会除以 hc）
     mu_B = 0.0
-    T    = 100.0
+    T    = 5.0
 
     # 初值（axion 接口：X0 = [sigma(3), eta(3), Phi1, Phi2]）
     X0   = [1.8, 1.8, 2.0,   0.1, 0.1, 0.1,   0.1, 0.1]
 
     # 结果容器：列 = [:T, :theta, :sigma_u, :sigma_d, :sigma_s, :eta_u, :eta_d, :eta_s, :Phi1, :Phi2]
-    X_get = zeros(lens, length(X0) + 2)
+    X_get = zeros(lens, length(X0) + 3)
     X_get[:, 1] .= T
     X_get[:, 2] .= vcat(collect(θ1), collect(θ2), collect(θ3))
 
@@ -143,9 +145,12 @@ function main_theta()
     output_file = "../../data/axion/axion_thetas.dat"
 
     # 段 1: θ ∈ [0, π)
+    println("计算 θ ∈ [0, π) ...")
     for (i, θ) in enumerate(θ1)
         X0 = Tmu(T/hc, mu_B/hc, X0, θ)
-        X_get[i, 3:end] = X0
+        P0 = - Omega(X0[1:6], X0[7], X0[8], T/hc, mu_B/hc, θ)
+        X_get[i, 3] = P0 
+        X_get[i, 4:end] = X0
     end
 
     # 在 θ = π 处：eta 需要变号
@@ -153,25 +158,31 @@ function main_theta()
 
     # 段 2: θ ∈ [π, 3π)
     offset2 = length(θ1)
+    println("计算 θ ∈ [π, 3π) ...")
     for (j, θ) in enumerate(θ2)
         X0 = Tmu(T/hc, mu_B/hc, X0, θ)
-        X_get[offset2 + j, 3:end] = X0
+        P0 = - Omega(X0[1:6], X0[7], X0[8], T/hc, mu_B/hc, θ)
+        X_get[offset2 + j, 3] = P0
+        X_get[offset2 + j, 4:end] = X0
     end
 
     # 在 θ = 3π 处：eta 再次变号
     X0[4:6] .*= -1
 
     # 段 3: θ ∈ [3π, 4π]
+    println("计算 θ ∈ [3π, 4π] ...")
     offset3 = length(θ1) + length(θ2)
     for (k, θ) in enumerate(θ3)
         X0 = Tmu(T/hc, mu_B/hc, X0, θ)
-        X_get[offset3 + k, 3:end] = X0
+        P0 = - Omega(X0[1:6], X0[7], X0[8], T/hc, mu_B/hc, θ)
+        X_get[offset3 + k, 3] = P0
+        X_get[offset3 + k, 4:end] = X0
     end
 
     # 写出
     data = DataFrame(
         X_get,
-        [:T, :theta, :sigma_u, :sigma_d, :sigma_s, :eta_u, :eta_d, :eta_s, :Phi1, :Phi2]
+        [:T, :theta, :P0, :sigma_u, :sigma_d, :sigma_s, :eta_u, :eta_d, :eta_s, :Phi1, :Phi2]
     )
     CSV.write(output_file, data)
 end
