@@ -30,7 +30,7 @@ end
 
 
 
-function Omega(orders, mus, T, theta, rho, Gv, ints)
+function Omega(orders, mus, T, theta, rhos, Gv, ints)
 
     p1, w1 = ints[1]
     p2, w2 = ints[2]
@@ -39,16 +39,19 @@ function Omega(orders, mus, T, theta, rho, Gv, ints)
     Phi1 = orders[7]
     Phi2 = orders[8]
 
-    rhoB = 3 * rho * rho0
+    
 
     chi = chiral(phi, theta)
     U = calc_U(T, Phi1, Phi2)
     Omega_q = 0.0
     for flavor = 1:3
-        mu = mus[flavor] - 2 * Gv * rhoB
+        mu = mus[flavor] - 4 * Gv * rhos[flavor]
         mass = Mass(phi, theta)[flavor]
         vacuum_term =  calculate_vacuum_term(p1, w1, mass)
         thermal_term = calculate_thermal_term(p2, w2, mass, T, mu, Phi1, Phi2)
+
+   
+
         Omega_q += vacuum_term + thermal_term
     end
 
@@ -61,7 +64,7 @@ function Omega(orders, mus, T, theta, rho, Gv, ints)
     Omega_mu = -2*T * sum(w2 .* fermion.(E_mu .- mu_mu, T) .+ w2 .* fermion.(E_mu .+ mu_mu, T))
 
 
-    Omega_total = chi + U + Omega_q - Gv * rhoB^2 + Omega_e + Omega_mu
+    Omega_total = chi + U + Omega_q - 2 * Gv * sum(rhos .^ 2) + Omega_e + Omega_mu
     return Omega_total      
 end
 
@@ -83,22 +86,21 @@ function calculate_thermal_term(p, w, mass, T, mu, Phi1, Phi2)
 end
 
 
-
 # 对序参量求导
-function dOmgea_dorder(orders, mus, T, theta, rho, Gv, ints)
-    return ForwardDiff.gradient(x -> Omega(x, mus, T, theta, rho, Gv, ints), orders)
+function dOmgea_dorder(orders, mus, T, theta, rhos, Gv, ints)
+    return ForwardDiff.gradient(x -> Omega(x, mus, T, theta, rhos, Gv, ints), orders)
 end
  
 
 
 # 对mu求导
-function dOmgea_dmus(orders, mus, T, theta, rho, Gv, ints)
-    return ForwardDiff.gradient(x -> Omega(orders, x, T, theta, rho, Gv, ints), mus)
+function dOmgea_dmus(orders, mus, T, theta, rhos, Gv, ints)
+    return ForwardDiff.gradient(x -> Omega(orders, x, T, theta, rhos, Gv, ints), mus)
 end
 
 # 对T求导 
-function dOmgea_dT(orders, mus, T, theta, rho, Gv, ints)
-    return ForwardDiff.derivative(x -> Omega(orders, mus, x, theta, rho, Gv, ints), T)
+function dOmgea_dT(orders, mus, T, theta, rhos, Gv, ints)
+    return ForwardDiff.derivative(x -> Omega(orders, mus, x, theta, rhos, Gv, ints), T)
 end
 
 
@@ -135,37 +137,6 @@ function AAbar(x, T, Phi1, Phi2)
     return result
 end
 
-
-function fphi(x, T, Phi1, Phi2)
-    term1 = Phi1 * exp.(-x ./ T) + 2 * Phi2 * exp.(-2.0 * x ./ T) +exp.(-3.0 * x ./ T)
-    term2 = 1.0 + 3.0 * Phi1 * exp.(-x ./ T) + 3.0 * Phi2 * exp.(-2.0 * x ./ T) + exp.(-3.0 * x ./ T)
-    over = -3.0 * x / T 
-
-    if over > 307.0
-        return 1.0
-    elseif over < -307.0
-        return 0.0
-    else 
-        return term1 ./ term2
-    end
-
-end
-
-function fphibar(x, T, Phi1, Phi2)
-    term1 = Phi2 * exp.(-x ./ T) + 2 * Phi1 * exp.(-2.0 * x ./ T) + exp.(-3.0 * x ./ T)
-    term2 = 1.0 + 3.0 * Phi2 * exp.(-x ./ T) + 3.0 * Phi1 * exp.(-2.0 * x ./ T) + exp.(-3.0 * x ./ T)
-
-    over = -3.0 * x / T
-
-    if over > 307.0
-        return 1.0
-    elseif over < -307.0
-        return 0.0
-    else 
-        return term1 ./ term2
-    end
-
-end
 
 
 
@@ -258,7 +229,6 @@ function Mass(phi, theta)
     return [mass_u, mass_d, mass_s]
 end
 
-E_of_p(p, mass) = sqrt(p*p + mass*mass)
 
 function calc_U(T, Phi1, Phi2)
     # 对数型 Polyakov 势
@@ -268,51 +238,6 @@ function calc_U(T, Phi1, Phi2)
     U = T^4 * (-0.5 * Ta * Phi2 * Phi1 + Tb * NaNMath.log(value))
     return U
 end
-
-
-function rho_mu_eff(mu_B, mu_Q, T,theta, NewX, rho, Gv, ints2)
-    mu_u = 1/3*mu_B + 2/3 * mu_Q
-    mu_d = 1/3*mu_B - 1/3 * mu_Q
-    mu_s = 1/3*mu_B - 1/3 * mu_Q
-    rho = 3 * rho * rho0  
-
-    mu_u_eff = mu_u - 2 * Gv * rho
-    mu_d_eff = mu_d - 2 * Gv * rho
-    mu_s_eff = mu_s - 2 * Gv * rho
-    mues = [mu_u_eff, mu_d_eff, mu_s_eff]
-    mu_e = - mu_Q
-    mu_mu = - mu_Q
-    
-
-    phi = NewX[1:6]
-    Phi1, Phi2 = NewX[7:8]
-    p, w = ints2
-    Masses = Mass(phi, theta)
-
-    rho_eff = 0.0
-    rho_flavor = [0.0, 0.0, 0.0]
-  
-    for flavor = 1:3
-        E = sqrt.(p.^2 .+ Masses[flavor]^2)
-        E_minus = E .- mues[flavor]
-        E_plus = E .+ mues[flavor]
-        f_dist = fphi.(E_minus, T, Phi1, Phi2)
-  
-        fbar_dist = fphibar.(E_plus, T, Phi1, Phi2)
-        rho_flavor[flavor] = sum(6 * w .* (f_dist .- fbar_dist))
-        rho_eff += rho_flavor[flavor] * mues[flavor]
-    end
-
-    E_e = sqrt.(p.^2 .+ m_e^2)
-    E_mu = sqrt.(p.^2 .+ m_mu^2)
-    rho_e = sum(2 * w .* n_fermion.(E_e .- mu_e, T) .- 2 * w .* n_fermion.(E_e .+ mu_e, T))
-    rho_mu = sum(2 * w .* n_fermion.(E_mu .- mu_mu, T) .- 2 * w .* n_fermion.(E_mu .+ mu_mu, T))
-    rho_eff += rho_e * mu_e + rho_mu * mu_mu
-    return rho_eff, rho_flavor[1], rho_flavor[2], rho_flavor[3], rho_e, rho_mu
-end
-
-
-
 
 
 
@@ -356,27 +281,32 @@ end
 function Quark_rho(X0, T, rho, theta, Gv, ints)
     T_out = promote_type(eltype(X0), typeof(T), typeof(rho))
 
-    fvec = zeros(T_out, 10)
+    fvec = zeros(T_out, 13)
     orders = X0[1:8]
-    muB = X0[9]
-    muQ = X0[10]
+    rhos = X0[9:11]
+    muB = X0[12]
+    muQ = X0[13]
     mu_u = 1/3*muB + 2/3 * muQ
     mu_d = 1/3*muB - 1/3 * muQ
     mu_s = 1/3*muB - 1/3 * muQ
     mu_e = - muQ
     mu_mu = - muQ
     mus = [mu_u, mu_d, mu_s, mu_e, mu_mu]
-    fvec[1:8] = dOmgea_dorder(orders, mus, T, theta, rho, Gv, ints)
-    rho_u, rho_d, rho_s, rho_e, rho_mu = -dOmgea_dmus(orders, mus, T, theta, rho, Gv, ints)
-    fvec[9] = rho_u + rho_d + rho_s - 3 * rho * rho0  # 体积密度转换为数密度
-    fvec[10] = (2/3) * rho_u - (1/3) * rho_d - (1/3) * rho_s - rho_e - rho_mu  # 电荷守恒
+    fvec[1:8] = dOmgea_dorder(orders, mus, T, theta, rhos, Gv, ints)
+    rho_u_now, rho_d_now, rho_s_now, rho_e_now, rho_mu_now = -dOmgea_dmus(orders, mus, T, theta, rhos, Gv, ints)
+    fvec[9] = rho_u_now - rhos[1]
+    fvec[10] = rho_d_now - rhos[2]
+    fvec[11] = rho_s_now - rhos[3]
+
+    fvec[12] = rho_u_now + rho_d_now + rho_s_now - 3 * rho * rho0  # rho 重子数密度
+    fvec[13] = (2/3) * rho_u_now - (1/3) * rho_d_now - (1/3) * rho_s_now - rho_e_now - rho_mu_now  # 电荷守恒
 
     return fvec
 end
 
 
-function Tmu(X0, mus, T, theta, Gv, ints)
-    fWrapper(Xs) = Quark_mu(Xs, mus, T, theta, Gv, ints)
+function Tmu(X0, mu_B, T, theta, Gv, ints)
+    fWrapper(Xs) = Quark_mu(Xs, mu_B, T, theta, Gv, ints)
     res = nlsolve(fWrapper, X0, autodiff=:forward)
     NewX = res.zero
     return NewX
@@ -387,29 +317,35 @@ end
 
 function Trho(X0, T, rho, theta, Gv, ints)
     fWrapper(Xs) = Quark_rho(Xs, T, rho, theta, Gv, ints)
-    res = nlsolve(fWrapper, X0, autodiff=:forward)
+    if rho<=1e-8
+        res = nlsolve(fWrapper, X0, autodiff=:forward, xtol=1e-10, ftol=1e-13)
+        println("xconverged: ", res.x_converged, ", fconverged: ", res.f_converged)
+    else 
+        res = nlsolve(fWrapper, X0, autodiff=:forward)
+    end
     NewX = res.zero
     return NewX
 end
 
 
-function get_EOS(NewX, T, rho, theta, Gv, ints)
+function get_EOS(NewX, T, theta, Gv, P0, ints)
     orders = NewX[1:8]
-    mu_B,mu_Q = NewX[9:10]
+    rhos = NewX[9:11]
+    mu_B = NewX[12]
+    mu_Q = NewX[13]
+
     mu_u = 1/3*mu_B + 2/3 * mu_Q
     mu_d = 1/3*mu_B - 1/3 * mu_Q
     mu_s = 1/3*mu_B - 1/3 * mu_Q
     mu_e = - mu_Q
     mu_mu = - mu_Q
     mus = [mu_u, mu_d, mu_s, mu_e, mu_mu]
-    rhoB = 3 * rho * rho0
-    mu_u_eff = mu_u - 2 * Gv * rhoB
-    mu_d_eff = mu_d - 2 * Gv * rhoB
-    mu_s_eff = mu_s - 2 * Gv * rhoB
-    P = - Omega(orders, mus, T, theta, rho, Gv, ints)
-    rho_u, rho_d, rho_s, rho_e, rho_mu = -dOmgea_dmus(orders, mus, T, theta, rho, Gv, ints)
-    S = - dOmgea_dT(orders, mus, T, theta, rho, Gv, ints)
-    rho_mu_eff = rho_u * mu_u_eff + rho_d * mu_d_eff + rho_s * mu_s_eff + rho_e * mu_e + rho_mu * mu_mu
+
+
+    P = - Omega(orders, mus, T, theta, rhos, Gv, ints) - P0
+    rho_u, rho_d, rho_s, rho_e, rho_mu = -dOmgea_dmus(orders, mus, T, theta, rhos, Gv, ints)
+    S = - dOmgea_dT(orders, mus, T, theta, rhos, Gv, ints)
+    rho_mu_eff = rho_u * mu_u + rho_d * mu_d + rho_s * mu_s + rho_e * mu_e + rho_mu * mu_mu
     E = - P + T * S + rho_mu_eff
-    return [rho, P, E]
+    return [P, E]
 end

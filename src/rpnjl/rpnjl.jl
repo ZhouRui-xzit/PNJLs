@@ -136,7 +136,7 @@ end
 
 function chiral(phi)
     
-    term1 = g_S * sum(phi[1:3].^2)
+    term1 = g_S * sum(phi[1:3].^2) #/2
     term2 = -g_D/2 * (phi[1] * phi[2] * phi[3])
     term3 = 3*g1/2 * (sum(phi[1:3].^2))^2
     term4 = 3*g2 * sum(phi[1:3].^4)
@@ -152,6 +152,11 @@ function Mass(phi)
     mass_u = mass_u0 - 2*g_S*phi[1]+g_D/4*phi[2]*phi[3]-2*g1*phi[1]*(sum(phi[1:3].^2))-4*g2*phi[1]^3
     mass_d = mass_d0 - 2*g_S*phi[2]+g_D/4*phi[1]*phi[3]-2*g1*phi[2]*(sum(phi[1:3].^2))-4*g2*phi[2]^3
     mass_s = mass_s0 - 2*g_S*phi[3]+g_D/4*phi[1]*phi[2]-2*g1*phi[3]*(sum(phi[1:3].^2))-4*g2*phi[3]^3
+    #mass_u = mass_u0 - 2*g_S*phi[1]+g_D*phi[2]*phi[3]-2*g1*phi[1]*(sum(phi[1:3].^2))-4*g2*phi[1]^3
+    #mass_d = mass_d0 - 2*g_S*phi[2]+g_D*phi[1]*phi[3]-2*g1*phi[2]*(sum(phi[1:3].^2))-4*g2*phi[2]^3
+    #mass_s = mass_s0 - 2*g_S*phi[3]+g_D*phi[1]*phi[2]-2*g1*phi[3]*(sum(phi[1:3].^2))-4*g2*phi[3]^3
+
+
 
     return [mass_u, mass_d, mass_s]
 end
@@ -227,23 +232,3 @@ function Trho(X0, T, rho, ints)
 end
 
 
-function get_EOS(NewX, T, rho, theta, Gv, ints)
-    orders = NewX[1:8]
-    mu_B,mu_Q = NewX[9:10]
-    mu_u = 1/3*mu_B + 2/3 * mu_Q
-    mu_d = 1/3*mu_B - 1/3 * mu_Q
-    mu_s = 1/3*mu_B - 1/3 * mu_Q
-    mu_e = - mu_Q
-    mu_mu = - mu_Q
-    mus = [mu_u, mu_d, mu_s, mu_e, mu_mu]
-    rhoB = 3 * rho * rho0
-    mu_u_eff = mu_u - 2 * Gv * rhoB
-    mu_d_eff = mu_d - 2 * Gv * rhoB
-    mu_s_eff = mu_s - 2 * Gv * rhoB
-    P = - Omega(orders, mus, T, theta, rho, Gv, ints)
-    rho_u, rho_d, rho_s, rho_e, rho_mu = -dOmgea_dmus(orders, mus, T, theta, rho, Gv, ints)
-    S = - dOmgea_dT(orders, mus, T, theta, rho, Gv, ints)
-    rho_mu_eff = rho_u * mu_u_eff + rho_d * mu_d_eff + rho_s * mu_s_eff + rho_e * mu_e + rho_mu * mu_mu
-    E = - P + T * S + rho_mu_eff
-    return [rho, P, E]
-end

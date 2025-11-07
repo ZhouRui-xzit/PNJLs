@@ -23,4 +23,4 @@ const a2 = 0.26
 const a3 = 0.26
 const b3 = 0.805
 const b4 = 7.555
-const kappa = 0.1
+const kappa = 0.10

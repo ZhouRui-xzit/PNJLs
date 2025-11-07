@@ -12,6 +12,7 @@ needs = [
     "Roots",
     "FiniteDifferences",
     "NaNMath",
+    "SpecialFunctions",
     "ApproxFun",# pdes
     "LinearAlgebra",
     "ModelingToolkit",
@@ -26,6 +27,7 @@ needs = [
     
     "BenchmarkTools",# others
     "Revise",
+
     "LanguageServer", # for terminal editor like neovim
     "SymbolServer",
     "StaticLint",

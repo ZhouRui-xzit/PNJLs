@@ -129,8 +129,9 @@ end
 function main_Tmu_equal_V()
     mu_B = 0.0
     Ts = 300.0:-2.0:10.0
-    V = (4/3)*pi*30.0^3
-    c = 30.0 
+    R = 5.0
+    V = (4/3)*pi*R^3
+    c = R
     ab = (3*V)/(4*pi) / c   
     es = [0.0, 0.99, 0.999, 0.9999, 0.99999]
     lens = length(Ts) * length(es)
@@ -148,7 +149,7 @@ function main_Tmu_equal_V()
         end
     end
 
-    outpath = "../../data/FV/sph_T_es_el_m.csv"
+    outpath = "../../data/FV/equal_VR=$R.csv"
     df = DataFrame(data, [:T, :e, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")

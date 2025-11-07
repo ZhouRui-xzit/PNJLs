@@ -1,3 +1,4 @@
 # 忽略所有 .dat 和 .csv 文件
 *.dat
 *.csv
+*.pdf

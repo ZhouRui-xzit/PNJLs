@@ -107,10 +107,10 @@ end
 
 
 function main3(;T=131.0, firstline_path::AbstractString="../../data/pure/1st.txt")
-    muBs = 1.0:10.0:1200.0   # 单位：MeV
-    mu_ceps = range(873.0, 874.0, length=20)  # 临界点附近精细扫描
+    muBs = 1.0:1.0:1200.0   # 单位：MeV
+    #mu_ceps = range(873.0, 874.0, length=20)  # 临界点附近精细扫描
 
-    muBs = vcat(muBs, mu_ceps...)  # 合并数组
+    #muBs = vcat(muBs, mu_ceps...)  # 合并数组
     muBs = sort(muBs)               # 排序
     # ===== 两套典型初值（与 Fortran 一致的"相位外形"）=====
     X_CONF   = [-1.9, -1.9, -2.2, 0.0038, 0.0038]
@@ -126,10 +126,13 @@ function main3(;T=131.0, firstline_path::AbstractString="../../data/pure/1st.txt
     # 初始用禁闭相初值
     X0 = copy(X_CONF)
     
-    data = zeros(length(muBs), 7)
+    data = zeros(length(muBs), 3)
     NewX = similar(X0)
     sol = zeros(length(muBs), 6)
     sol[:, 1] .= muBs
+    data[:, 1] .= T
+    data[:, 2] .= muBs
+
     k_1st = 0   # 进入一阶区计数
     
     println("T = $T MeV")
@@ -162,15 +165,15 @@ function main3(;T=131.0, firstline_path::AbstractString="../../data/pure/1st.txt
         # 牛顿迭代/求解器
         NewX = Tmu(T/hc, mu_B/hc, X0)
         sol[i, 2:end] = NewX
-        
-        # 涨落计算
-        data[i, :] = Fluctuations(NewX*1.001, T/hc, mu_B/hc)
-
+        phi = NewX[1:3]
+        Phi1 = NewX[4]
+        Phi2 = NewX[5]
+        data[i, 3] = -Omega(phi, Phi1, Phi2, T/hc, mu_B/hc)
         # 下一步的延拓初值
         X0 .= NewX
     end
 
-    df = DataFrame(data, [:T, :mu_B, :P, :chi_mu, :chi2_mu2, :chi3_mu3, :chi4_mu4])
+    df = DataFrame(data, [:T, :mu_B, :P])
     df_sol = DataFrame(sol, [:mu_B, :phiu, :phid, :phis, :Phi, :Phi_bar])
     CSV.write("../../data/pure/FLU_T=$T.csv", df)
     CSV.write("../../data/pure/sol_T=$T.csv", df_sol)

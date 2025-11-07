@@ -140,7 +140,7 @@ function binary_search_CEP(T_lower, T_upper,ints; tolerance=0.01, rho_density=0.
     end
 
     println("\n二分搜索完成，共 $iter 次迭代")
-    println("最终区间: [$(T_lower), $(T_upper)] MeV, 宽度: $(T_upper - T_lower) MeV, a,b,c=$(paras)")
+    println("最终区间: [$(T_lower), $(T_upper)] MeV, 宽度: $(T_upper - T_lower) MeV")
 
     return (T_CEP=T_lower, T_lower=T_lower, T_upper=T_upper,
             precision=T_upper - T_lower, iterations=iter,
@@ -227,9 +227,18 @@ function main(;paras=paras, T_min=125.0, T_max=135.0)
     println("\n结果已追加保存至 $(outfile)")
 end
 
-# 作为脚本执行
-if abspath(PROGRAM_FILE) == @__FILE__
-    paras = [30.0, 30.0, 30.0] #椭球参数
+function start_el()
+    R = 10.0
+    V = (4/3)*pi*R^3
+    c = R
+    ab = (3*V)/(4*pi) / c 
+    e = 0.9999
+    a = sqrt(ab / sqrt(1 - e^2))
+    b = sqrt(ab * sqrt(1 - e^2))
+    paras = [a, b, c]
     main(;paras=paras, T_min=120.0, T_max=135.0)
 end
+
+
+
     

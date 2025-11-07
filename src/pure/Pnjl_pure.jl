@@ -237,7 +237,12 @@ end
     mid  = (b + a) / S(2)
     p  = half .* S.(x) .+ mid
     wp = half .* S.(w)
-    return sum(wp .* vacand.(p, Ref(phi)))
+        # 避免使用广播，改用手动循环
+    result = zero(S)
+    for i in 1:length(p)
+        result += wp[i] * vacand(p[i], phi)
+    end
+    return result
 end
 
 # -------------------- 热项（窗口分段 + 固定网格） --------------------

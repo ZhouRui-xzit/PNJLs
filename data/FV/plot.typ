@@ -123,6 +123,14 @@
   )
 }
 
+
+
+
+
+
+
+
+
 // 然后将这些绘图命令作为参数传递给 diagram
 #align(center)[
   #lq.diagram(
@@ -188,5 +196,116 @@
   legend: (position: top + right),
   ..plots3a,  // 使用展开语法将所有图线添加到图表
   ..plots3b,
+)
+]
+
+
+// 自动获取所有R值
+#let all_R_values_eV1 = get_all_R_values("FV/equal_VR=10.0.csv")
+#let data_eV1 = fig_phiT("FV/equal_VR=10.0.csv")
+#let plots_eV1 = ()
+#for (i, r) in all_R_values_eV1.enumerate() {
+  let key = str(r)
+  plots_eV1.push(
+    lq.plot(
+      data_eV1.at(key).T, data_eV1.at(key).phi,
+      stroke: (thickness:1.5pt, paint: line_color.at(("a", "b", "c", "d", "e", "f", "g", "h").at(calc.rem(i, 8))), 
+      dash:lines_style.b),
+      mark: none,
+      label:[ $e=#r$ ]
+    )
+  )
+}
+
+
+// 然后将这些绘图命令作为参数传递给 diagram
+#align(center)[
+  #lq.diagram(
+  width: 10cm,
+  height: 7cm,
+  xlabel: [ $T$ (MeV) ],
+  ylabel: [ $phi.alt_u$ ],
+  title: [ $V=4pi\/3 * 10^3 upright(f m)^3$ ],
+  xlim: (10.0, 300.0),
+  ylim: (-2, 0.1),
+  xaxis:(subticks:1),
+  yaxis:(subticks:9, ticks:range(-2, 0, step:1)),
+  legend: (position: top + left),
+  ..plots_eV1
+)
+]
+
+
+// 自动获取所有R值
+#let all_R_values_eV2 = get_all_R_values("FV/equal_VR=7.0.csv")
+#let data_eV2 = fig_phiT("FV/equal_VR=7.0.csv")
+#let plots_eV2 = ()
+#for (i, r) in all_R_values_eV2.enumerate() {
+  let key = str(r)
+  plots_eV2.push(
+    lq.plot(
+      data_eV2.at(key).T, data_eV2.at(key).phi,
+      stroke: (thickness:1.5pt, paint: line_color.at(("a", "b", "c", "d", "e", "f", "g", "h").at(calc.rem(i, 8))),
+      dash:lines_style.b),
+      mark: none,
+      label:[ $e=#r$ ]
+    )
+  )
+}
+
+
+// 然后将这些绘图命令作为参数传递给 diagram
+#align(center)[
+  #lq.diagram(
+  width: 10cm,
+  height: 7cm,
+  xlabel: [ $T$ (MeV) ],
+  ylabel: [ $phi.alt_u$ ],
+  title: [ $V=4pi\/3 * 7^3 upright(f m)^3$ ],
+  xlim: (10.0, 300.0),
+  ylim: (-2, 0.1),
+  xaxis:(subticks:1),
+  yaxis:(subticks:9, ticks:range(-2, 0, step:1)),
+  legend: (position: top + left),
+  ..plots_eV2
+)
+]
+
+
+
+
+
+// 自动获取所有R值
+#let all_R_values_eV3 = get_all_R_values("FV/equal_VR=5.0.csv")
+#let data_eV3 = fig_phiT("FV/equal_VR=5.0.csv")
+#let plots_eV3 = ()
+#for (i, r) in all_R_values_eV3.enumerate() {
+  let key = str(r)
+  plots_eV3.push(
+    lq.plot(
+      data_eV3.at(key).T, data_eV3.at(key).phi,
+      stroke: (thickness:1.5pt, paint: line_color.at(("a", "b", "c", "d", "e", "f", "g", "h").at(calc.rem(i, 8))),
+      dash:lines_style.b),
+      mark: none,
+      label:[ $e=#r$ ]
+    )
+  )
+}
+
+
+// 然后将这些绘图命令作为参数传递给 diagram
+#align(center)[
+  #lq.diagram(
+  width: 10cm,
+  height: 7cm,
+  xlabel: [ $T$ (MeV) ],
+  ylabel: [ $phi.alt_u$ ],
+  title: [ $V=4pi\/3 * 5^3 upright(f m)^3$ ],
+  xlim: (10.0, 300.0),
+  ylim: (-2, 0.1),
+  xaxis:(subticks:1),
+  yaxis:(subticks:9, ticks:range(-2, 0, step:1)),
+  legend: (position: top + left),
+  ..plots_eV3
 )
 ]
