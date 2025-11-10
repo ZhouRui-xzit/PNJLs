@@ -186,7 +186,7 @@ end
 function main_Trho(;R=30.0, el=30.0)
     println("Time:", Dates.now())
     #path = "../../data/FV/T_rho_B_scan_R=$R.dat"
-    path = "../../data/FV/T_rho_B_scan_el=$el.dat"
+    path = "../../data/FV/T_rho_B_scan_el2.dat"
     df = CSV.read(path, DataFrame)
     T = df.T
     mu = df.mu
@@ -272,6 +272,6 @@ end
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    main_Tmu()
+    #main_Tmu()
     #main_Trho()
 end

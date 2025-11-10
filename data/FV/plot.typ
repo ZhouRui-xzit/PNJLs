@@ -276,8 +276,8 @@
 
 
 // 自动获取所有R值
-#let all_R_values_eV3 = get_all_R_values("FV/equal_VR=5.0.csv")
-#let data_eV3 = fig_phiT("FV/equal_VR=5.0.csv")
+#let all_R_values_eV3 = get_all_R_values("FV/equal_V_R=10.0.csv")
+#let data_eV3 = fig_phiT("FV/equal_V_R=10.0.csv")
 #let plots_eV3 = ()
 #for (i, r) in all_R_values_eV3.enumerate() {
   let key = str(r)
@@ -300,7 +300,7 @@
   height: 7cm,
   xlabel: [ $T$ (MeV) ],
   ylabel: [ $phi.alt_u$ ],
-  title: [ $V=4pi\/3 * 5^3 upright(f m)^3$ ],
+  title: [ $V=4pi\/3 * 50^3 upright(f m)^3$ ],
   xlim: (10.0, 300.0),
   ylim: (-2, 0.1),
   xaxis:(subticks:1),

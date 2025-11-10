@@ -48,6 +48,7 @@ function f_el(x, mass, a, b ,c) # rho_MRE for elipsoid
     S = 4 * pi * ((a^1.6075 * b^1.6075 + a^1.6075 * c^1.6075 + b^1.6075 * c^1.6075)/3)^(1/1.6075)
     C = total_mean_curvature_ellipsoid(a, b, c)
     term1 = 6 * (x^2 * V / (2*pi^2) + x*S * surface(x, mass) + C * curvature(x, mass))
+   
     return term1 / (6 * V)
 end
 
@@ -75,18 +76,52 @@ function Find_IR_sph(R, masses)
     return IR
 end
 
-function Find_IR_el(a, b, c, masses)
+function old_Find_IR_el(a, b, c, masses; modes="D")
     IR = zeros(3)
     for flavor = 1:3
         mass = masses[flavor]
         fWrapper(X) = [f_el(X[1], mass, a, b, c)]  # 保证返回向量
-        IR0 = [0.1]
-        res = nlsolve(fWrapper, IR0, autodiff=:forward)
+        if modes == "D"
+            IR0 = [0.6] # 圆解
+        elseif modes == "N"
+            IR0 = [1 / (sqrt(2)* c)] 
+        else # Dr
+            IR0 = [0.6]
+        end
+        res = nlsolve(fWrapper, IR0, 
+             method=:newton,  # 或 :newton, :anderson
+             autodiff=:forward,
+             ftol=1e-10,
+             xtol=1e-10,
+             iterations=5000)
+        println("a,b,c=", a, ",", b, ",", c)
+        println("res:", res.f_converged,res.x_converged, " IR=", res.zero[1])
         IR[flavor] = res.zero[1]
     end
     return IR
-    
 end
+
+function Find_IR_el(a, b, c; modes="D")
+    if modes == "D"
+        IR0 = [10.0] # 圆解
+        mass = 1e10
+    elseif modes == "N"
+        IR0 = [10.0] 
+        mass = 1e-5
+    end 
+    fWrapper(X) = [f_el(X[1], mass, a, b, c)]  # 保证返回向量
+    res = nlsolve(fWrapper, IR0, 
+         method=:newton,  # 或 :newton, :anderson
+         autodiff=:forward,
+         ftol=1e-10,
+         xtol=1e-10,
+         iterations=5000)
+    IR = res.zero[1]
+    println("a,b,c=", a, ",", b, ",", c)
+    println(" IR=", res.zero[1])
+    return IR
+end
+
 
 
 
@@ -95,6 +130,8 @@ function get_nodes_sph(num, R ;modes="m")
         masses = alpha_D
     elseif modes == "N"
         masses = alpha_N
+    elseif modes == "Dr"
+        masses = alpha_Dr
     else
         masses = m0
     end
@@ -142,11 +179,13 @@ function get_nodes_el(num, a, b, c; modes="m")
         masses = alpha_D
     elseif modes == "N"
         masses = alpha_N
+    elseif modes == "Dr"
+        masses = alpha_Dr
     else
         masses = m0
     end
-    IR_u, IR_d, IR_s = Find_IR_el(a, b, c, masses)  # 三种夸克的IR截断
-
+    IR = Find_IR_el(a, b, c;modes=modes)  # 三种夸克的IR截断
+    IR_u, IR_d, IR_s = IR, IR, IR
     # 定义参数组合：每个夸克两种不同的节点配置
     configs = [
         # 真空积分节点 (从IR到Lambda_f)

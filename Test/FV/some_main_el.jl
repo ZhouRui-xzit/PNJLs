@@ -33,23 +33,24 @@ function main_Tmu(paras)
     CSV.write("../../data/FV/T_mu_B_scan_el=$a.dat", df)
 end
 
-function main_Trho(paras)
-    println("Time:", Dates.now())
-    #T_CEP =  129.960   #a=b = 30 , c = 30
-    #T_CEP =  129.007   #a=b = 10 , c = 30
-    #T_CEP =  128.29   #a=b = 7 , c = 30
-    #T_CEP =  127.28  #a=b = 5 , c = 30
-    #T_CEP = 124.68 #a=b = 3 , c = 30
-    #T_CEP = 121.0  #a=b = 2 , c = 30
-    T_CEP = 106.08  #a=b = 1 , c = 30
+function main_Trho(;R=10.0,e=0.9)
+    #R = 10.0
+    V = (4/3)*pi*R^3
+    c = R
+    ab = (3*V)/(4*pi) / c 
+    #e = 0.9999
+    a = sqrt(ab / sqrt(1 - e^2))
+    b = sqrt(ab * sqrt(1 - e^2))
     
+    modes = "m"
+    T_CEP = 126.8203125
 
     T1s = T_CEP:-0.01:T_CEP-0.1
     T2s = (T_CEP-0.1)-0.1:-0.1:T_CEP-1.0
-    T3s = T_CEP-2.0:-2.0:10.0
-    Ts = vcat(T1s, T2s, T3s)
+    T3s = range(T_CEP-1.0, T_CEP-10.0, length=20)  # 修改：使用 range
+    T4s = range(T_CEP-10.0, 10.0, length=40)       # 修改：使用 range
+    Ts = unique(vcat(T1s, T2s, T3s, T4s))
 
-    a, b, c = paras
 
     rho1s = 3.00:-0.01:0.01
     rho2s = [1e-8, 5e-8, 1e-7, 5e-7, 1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
@@ -57,9 +58,9 @@ function main_Trho(paras)
     rhos = vcat(rho1s, rho2s)
     
     X0 = [-1.8,-1.8, -2.2, 0.01,0.01, 320/hc, 320/hc, 320/hc]  # phi_u, phi_d, phi_s, Phi1, Phi2, muB_div3, aux1, aux2
-    ints1 = get_nodes_el(128, a, b, c)
-    ints2 = get_nodes_el(256, a, b, c)
-    ints3 = get_nodes_el(512, a, b, c)
+    ints1 = get_nodes_el(200, a, b, c;modes=modes)
+    ints2 = get_nodes_el(400, a, b, c;modes=modes)
+    ints3 = get_nodes_el(800, a, b, c;modes=modes)
 
     lens = length(Ts) * length(rhos)
     data = zeros(lens, 9)  # T, rho_B, mu_B/3, P, phi_u, phi_d, phi_s, Phi1, Phi2
@@ -126,42 +127,73 @@ end
 
 
 
+function parametrize_deformation(R, δ;para=2.0)
+    """
+    δ: 变形参数 (0 ≤ δ < ∞)
+    - δ = 0: 球形
+    - δ > 0: 扁平椭球（a=b > c）
+    - 表面积单调递增
+    """
+    V = (4/3)*π*R^3
+    
+    # 基于 β₂ 的简化
+    β₂ = tanh(δ)  # 保证 β₂ < 1
+  #@  para = 1.8
+    a = R * (1 + para * β₂)^(2/3)
+    b = a
+    c = V / ((4/3)*π*a*b)
+    
+    return a, b, c
+end
+
+
+function parametrize_deformation(R, δ;para=2.0)
+    """
+    δ: 变形参数 (0 ≤ δ < ∞)
+    - δ = 0: 球形
+    - δ > 0: 细长椭球（a=b > c）
+    - 表面积单调递增
+    """
+    V = (4/3)*π*R^3
+    
+    # 基于 β₂ 的简化
+    β₂ = tanh(δ)  # 保证 β₂ < 1
+  #@  para = 1.8
+    a = R * (1 + para * β₂)^(-2/3)
+    b = a
+    c = V / ((4/3)*π*a*b)
+    
+    return a, b, c
+end
+
+
+
 function main_Tmu_equal_V()
     mu_B = 0.0
-    Ts = 300.0:-2.0:10.0
-    R = 5.0
-    V = (4/3)*pi*R^3
-    c = R
-    ab = (3*V)/(4*pi) / c   
-    es = [0.0, 0.99, 0.999, 0.9999, 0.99999]
-    lens = length(Ts) * length(es)
+    Ts = 300:-2.0:10.0
+    R = 10.0
+    #V = (4/3)*pi*R^3
+    delta_s = [0.0, 0.3, 0.5, 0.7, 1.0]
+    lens = length(Ts) * length(delta_s)
     data = zeros(lens, 7)  # T, R, phi_u, phi_d, phi_s, Phi1, Phi2
-    for (i, e) in enumerate(es)
+    for (i, e) in enumerate(delta_s)
         println("e = $e ")
-        a = sqrt(ab / sqrt(1 - e^2))
-        b = sqrt(ab * sqrt(1 - e^2))
-        ints = get_nodes_el(128, a, b, c)
+        a, b, c = parametrize_deformation(R, e; para=3.0)
+        ints = get_nodes_el(128, a, b, c, modes="D")
         X0 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # 重置初始猜测
         for (j, T) in enumerate(Ts)
             idx = (i-1)*length(Ts) + j
             X0 = Tmu(T/hc, mu_B/hc, X0, ints)
             data[idx, :] = [T, e, X0...]
+
         end
+
     end
+outpath = "../../data/FV/equal_V_R=$(R).csv"
+df = DataFrame(data, [:T, :e, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
+CSV.write(outpath, df)
+println("结果已保存至 $outpath")
+    
 
-    outpath = "../../data/FV/equal_VR=$R.csv"
-    df = DataFrame(data, [:T, :e, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
-    CSV.write(outpath, df)
-    println("结果已保存至 $outpath")
 end
 
-
-
-
-
-
-
-if abspath(PROGRAM_FILE) == @__FILE__
-    paras = [10.0, 10.0,]
-    main_Trho(paras)
-end
