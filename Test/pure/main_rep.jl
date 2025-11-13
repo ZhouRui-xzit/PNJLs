@@ -47,7 +47,7 @@ end
 
 
 
-function main2(; mu_B::Float64 = 0.0, firstline_path::AbstractString="../../data/pure/1st.txt")\
+function main2(; mu_B::Float64 = 0.0, firstline_path::AbstractString="../../data/pure/1st.txt")
     # mu_BC = 391*3 MEV
     Ts = 50.0:2.0:400.0   # 单位：MeV
         # ===== 两套典型初值（与 Fortran 一致的“相位外形”）=====

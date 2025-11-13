@@ -75,7 +75,7 @@ function coarse_scan(T_min, T_max, ints; step=1.0)
     end
     println("未找到存在 S 型曲线的温度区间")
     println("I'm going to lower T_min and try again.")
-    T_new_rang = T_min - 1:-step:50.0
+    T_new_rang = T_min - 1:-step:10.0
     for T in T_new_rang
         check = check_s_shape(T, ints)
         if !check.has_s_shape
@@ -162,7 +162,7 @@ function find_T_CEP(; T_min=120.0, T_max=140.0,
 
     # 1) 粗略扫描（T 单位：MeV）
     a, b, c = paras #椭球参数
-    ints = get_nodes_el(128, a, b, c)
+    ints = get_nodes_el(500, a, b, c;modes="D")
     println("=== 开始粗略扫描，步长: $(coarse_step) MeV, a,b,c=$(paras) ===")
     coarse_result = coarse_scan(T_min, T_max,  ints; step=coarse_step)
 
@@ -228,17 +228,33 @@ function main(;paras=paras, T_min=125.0, T_max=135.0)
 end
 
 function start_el()
-    R = 10.0
-    V = (4/3)*pi*R^3
-    c = R
-    ab = (3*V)/(4*pi) / c 
-    e = 0.9999
-    a = sqrt(ab / sqrt(1 - e^2))
-    b = sqrt(ab * sqrt(1 - e^2))
-    paras = [a, b, c]
-    main(;paras=paras, T_min=120.0, T_max=135.0)
+    R = 30.0
+    delta = 0.0
+    paras = parametrize_deformation(R, delta;para=3.0,scale=-1.0)
+    main(;paras=paras, T_min=80, T_max=130)
 end
 
 
 
+
+function parametrize_deformation(R, δ;para=2.0,scale=1.0)
+    """
+    δ: 变形参数 (0 ≤ δ < ∞)
+    para: 调节变形幅度的参数
+    scale: +1 压扁 -1 拉长
+    - δ = 0: 球形 (a=b=c=R)
+    - δ > 0 (且 scale=1.0): 扁平椭球(a=b > c)
+    - δ > 0 (且 scale=-1.0): 拉长椭球(a=b < c)
+    - 表面积单调递增
+    """
+    V = (4/3)*π*R^3
     
+    # 基于 β₂ 的简化
+    β₂ = tanh(δ)  # 保证 β₂ < 1
+  #@  para = 1.8
+    a = R * (1 + para * β₂)^(scale * 2/3)
+    b = a
+    c = V / ((4/3)*π*a*b)
+    
+    return a, b, c
+end

@@ -183,10 +183,14 @@ function find_Trho(mu, rho)
     )
 end
 
-function main_Trho(;R=30.0, el=30.0)
+
+
+
+function main_Trho()
     println("Time:", Dates.now())
     #path = "../../data/FV/T_rho_B_scan_R=$R.dat"
-    path = "../../data/FV/T_rho_B_scan_el2.dat"
+    el = 0.0
+    path = "../../data/FV/T_rho_B_single_el=0.0.dat"
     df = CSV.read(path, DataFrame)
     T = df.T
     mu = df.mu
@@ -243,9 +247,10 @@ end
 
 
 
-function main_Tmu(;R=30.0, el=30.0)
+function main_Tmu()
     println("Time:", Dates.now())
-    path = "../../data/FV/T_mu_B_scan_el=$el.dat"
+    e = 0.0
+    path = "../../data/FV/T_mu_B_scan_el=0.0.dat"
     df = CSV.read(path, DataFrame)
     T = df.T
     phi_u = df.phi_u
@@ -265,7 +270,7 @@ function main_Tmu(;R=30.0, el=30.0)
         mu_B = data[:, 1],
         T_c  = data[:, 2],
     )
-    outpath = "../../data/FV/Tmu_Tc_el=$el.dat"
+    outpath = "../../data/FV/Tmu_Tc_el=$e.dat"
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")
 end
