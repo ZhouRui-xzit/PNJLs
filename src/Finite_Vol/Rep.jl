@@ -1,4 +1,4 @@
-include("pnjl_FV.jl")
+includet("pnjl_FV.jl")
 using CSV 
 using DataFrames
 using FiniteDifferences
@@ -82,12 +82,14 @@ function Ther_Rep(X0, T, mu_B, ints, P0)
     chi_muT = DmuTOmega(X0, T, mu_B, ints)
 
     E = -P + T*chi_T + mu_B*chi_mu
+    # 热容
+    # CV = T * (chi_TT - chi_muT^2 / chi_mumu)
+    # CP = CV + (chi_muT - (mu_B / T) * chi_mumu)^2 * T / chi_mumu
 
-
-    v_n_2 = (chi_T * chi_mumu - chi_mu * chi_muT) / (T * (chi_mumu * chi_TT - chi_muT^2))
-    v_s_2 = (chi_T * chi_muT - chi_mu * chi_TT) / (mu_B * (chi_muT^2 - chi_TT * chi_mumu))
-    E = T * chi_T + mu_B * chi_mu - P
-    v_2 = (v_n_2 * T * chi_T + v_s_2 * mu_B * chi_mu) / (P + E)
+    v_n_2 = (chi_T * chi_mumu - chi_mu * chi_muT) / (T * (chi_mumu * chi_TT - chi_muT^2)) # 等密声速平方
+    v_s_2 = (chi_T * chi_muT - chi_mu * chi_TT) / (mu_B * (chi_muT^2 - chi_TT * chi_mumu)) # 等熵声速平方
+    # 等 s/rho
+    v_2 = (v_n_2 * T * chi_T + v_s_2 * mu_B * chi_mu) / (P + E) # P+E = T*chi_T + mu_B*chi_mu
 
 
     return [T*197.33, mu_B*197.33, P, E, v_2]

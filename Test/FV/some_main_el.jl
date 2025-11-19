@@ -40,14 +40,17 @@ function main_Trho(;R=30.0,e=0.0)
     a, b, c = parametrize_deformation(R, e;para=3.0,scale=-1.0)
 
     modes = "D"
-    T_CEP =  107.921875
+    T_CEP = 107.921875 # R=30.0 e=0.0
+    T_CEP = 98.9765625 # R=30.0 e=0.3
+    T_CEP = 81.2734375 # R=30.0 e=0.7
+    T_CEP = 69.5546875 # R=30.0 e=1.0
 
     T1s = T_CEP:-0.02:T_CEP-0.1
     T2s = (T_CEP-0.1)-0.1:-0.2:T_CEP-1.0
     T3s = range(T_CEP-1.0, T_CEP-10.0, length=5)  # 修改：使用 range
     T4s = range(T_CEP-10.0, 10.0, length=30)       # 修改：使用 range
     Ts = unique(vcat(T1s, T2s, T3s, T4s))
-    Ts = 107:-1:10
+    Ts = 69:-1:10
     T_test = [20.0]
 
     rho1s = 3.00:-0.01:0.01

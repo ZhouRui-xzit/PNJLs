@@ -189,8 +189,8 @@ end
 function main_Trho()
     println("Time:", Dates.now())
     #path = "../../data/FV/T_rho_B_scan_R=$R.dat"
-    el = 0.0
-    path = "../../data/FV/T_rho_B_single_el=0.0.dat"
+    el = 1.0
+    path = "../../data/FV/T_rho_B_single_el=1.0.dat"
     df = CSV.read(path, DataFrame)
     T = df.T
     mu = df.mu

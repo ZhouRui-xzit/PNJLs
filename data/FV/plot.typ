@@ -140,3 +140,134 @@
   ..plots_eV4
 )
 ]
+
+== 声速曲线
+
+
+#let data_cs1 = csv("rep_mu=R30.0e0.0_950.0.csv")
+#let data_cs2 = csv("rep_mu=R30.0e0.3_950.0.csv")
+#let data_cs3 = csv("rep_mu=R30.0e0.7_950.0.csv")
+#let data_cs4 = csv("rep_mu=R30.0e1.0_950.0.csv")
+
+// 提取数据列
+#let T_data1 = data_cs1.slice(1).map(row => float(row.at(0)))
+#let cs2_data1 = data_cs1.slice(1).map(row => float(row.at(4)))
+
+#let T_data2 = data_cs2.slice(1).map(row => float(row.at(0)))
+#let cs2_data2 = data_cs2.slice(1).map(row => float(row.at(4)))
+
+#let T_data3 = data_cs3.slice(1).map(row => float(row.at(0)))
+#let cs2_data3 = data_cs3.slice(1).map(row => float(row.at(4)))
+
+#let T_data4 = data_cs4.slice(1).map(row => float(row.at(0)))
+#let cs2_data4 = data_cs4.slice(1).map(row => float(row.at(4)))
+
+
+
+
+
+
+#align(center)[
+  #lq.diagram(
+    width: 10cm,
+    height: 7cm,
+    xlabel: [ $T$ (MeV) ],
+    ylabel: [ $c_(s\/rho_B)^2$ ],
+    title: [  $mu_B = 950 upright(M e V)$  ],
+    xlim: (50.0, 300.0),
+    ylim: (0.0, 0.35),
+    xaxis:(subticks:1),
+    yaxis:(subticks:1),
+    legend: (position: bottom + right),
+    lq.plot(
+      T_data1, cs2_data1,
+      stroke: (thickness:2pt, paint: blue, dash: lines_style.b),
+      mark: none,
+      label: [ $e=0.0$ ]
+    ),
+
+    lq.plot(
+      T_data2, cs2_data2,
+      stroke: (thickness:2pt, paint: red, dash: lines_style.b),
+      mark: none,
+      label: [ $e=0.3$ ]
+    ),
+    lq.plot(
+      T_data3, cs2_data3,
+      stroke: (thickness:2pt, paint: green, dash: lines_style.c),
+      mark: none,
+      label: [ $e=0.7$ ]
+    ),
+
+    lq.plot(
+      T_data4, cs2_data4,
+      stroke: (thickness:2pt, paint: orange, dash: lines_style.d),
+      mark: none,
+      label: [ $e=1.0$ ]
+    )
+
+  )
+]
+
+
+
+#let data_cs01 = csv("rep_mu=R30.0e0.0_1.0.csv")
+#let data_cs02 = csv("rep_mu=R30.0e0.3_1.0.csv")
+#let data_cs03 = csv("rep_mu=R30.0e0.7_1.0.csv")
+#let data_cs04 = csv("rep_mu=R30.0e1.0_1.0.csv")
+
+// 提取数据列
+#let T_data01 = data_cs01.slice(1).map(row => float(row.at(0)))
+#let cs2_data01 = data_cs01.slice(1).map(row => float(row.at(4)))
+
+#let T_data02 = data_cs02.slice(1).map(row => float(row.at(0)))
+#let cs2_data02 = data_cs02.slice(1).map(row => float(row.at(4)))
+
+#let T_data03 = data_cs03.slice(1).map(row => float(row.at(0)))
+#let cs2_data03 = data_cs03.slice(1).map(row => float(row.at(4)))
+
+#let T_data04 = data_cs04.slice(1).map(row => float(row.at(0)))
+#let cs2_data04 = data_cs04.slice(1).map(row => float(row.at(4)))
+
+
+#align(center)[
+  #lq.diagram(
+    width: 10cm,
+    height: 7cm,
+    xlabel: [ $T$ (MeV) ],
+    ylabel: [ $c_(s\/rho_B)^2$ ],
+    title: [  $mu_B = 0 upright(M e V)$  ],
+    xlim: (50.0, 300.0),
+    ylim: (0.0, 0.35),
+    xaxis:(subticks:1),
+    yaxis:(subticks:1),
+    legend: (position: bottom + right),
+    lq.plot(
+      T_data01, cs2_data01,
+      stroke: (thickness:1pt, paint: blue, dash: lines_style.b),
+      mark: none,
+      label: [ $e=0.0$ ]
+    ),
+
+    lq.plot(
+      T_data02, cs2_data02,
+      stroke: (thickness:1pt, paint: red, dash: lines_style.c),
+      mark: none,
+      label: [ $e=0.3$ ]
+    ),
+    lq.plot(
+      T_data03, cs2_data03,
+      stroke: (thickness:1pt, paint: green, dash: lines_style.d),
+      mark: none,
+      label: [ $e=0.7$ ]
+    ),
+
+    lq.plot(
+      T_data04, cs2_data04,
+      stroke: (thickness:1pt, paint: orange, dash: lines_style.e),
+      mark: none,
+      label: [ $e=1.0$ ]
+    )
+
+  )
+]

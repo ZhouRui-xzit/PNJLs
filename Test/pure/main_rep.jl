@@ -48,12 +48,12 @@ end
 
 
 function main2(; mu_B::Float64 = 0.0, firstline_path::AbstractString="../../data/pure/1st.txt")
-    # mu_BC = 391*3 MEV
-    Ts = 50.0:2.0:400.0   # 单位：MeV
+    # mu_BC = 291*3 MEV
+    Ts = 50.0:2.0:300.0   # 单位：MeV
         # ===== 两套典型初值（与 Fortran 一致的“相位外形”）=====
     X_CONF   = [-1.9, -1.9, -2.2, 0.0038, 0.0038]
     X_DECONF = [-0.5, -0.5, -1.8, 0.80,   0.80  ]
-
+    P0 = 20.001   # 初始压力值（与 Fortran 一致）
     # 一阶线表：mu_1stt(T), T_1stt (均为 MeV)
     mu_1stt, T_1stt = read_firstline(firstline_path)
     Tmax_1st = maximum(T_1stt)
@@ -89,10 +89,10 @@ function main2(; mu_B::Float64 = 0.0, firstline_path::AbstractString="../../data
         # ---------------------------------------------------------
 
         # 牛顿迭代/求解器
-        NewX = Tmu(T, mu_B, X0, ints)
+        NewX = Tmu(T/hc, mu_B/hc, X0)
         sol[i, 2:end] = NewX
         # 微扰
-        data[i, :] = Ther_Rep(NewX*1.0001, T, mu_B)
+        data[i, :] = Ther_Rep(NewX*1.0001, T/hc, mu_B/hc, P0)
 
         # 下一步的延拓初值（Fortran 的 “k>1 then 用上步中心点解” 的 Julia 等价）
         X0 .= NewX
@@ -100,8 +100,8 @@ function main2(; mu_B::Float64 = 0.0, firstline_path::AbstractString="../../data
 
     df = DataFrame(data, [:T, :mu_B, :c_s, :c_rho, :c_s_rho])
     df_sol = DataFrame(sol, [:T, :phiu, :phid, :phis, :Phi, :Phi_bar])
-    CSV.write("../data/rep_mu=$(mu_B).csv", df)
-    CSV.write("../data/rep_sol_mu=$(mu_B).csv", df_sol)
+    CSV.write("rep_mu=$(mu_B).csv", df)
+    CSV.write("rep_sol_mu=$(mu_B).csv", df_sol)
     println("Done!")
 end
 
@@ -180,4 +180,3 @@ function main3(;T=131.0, firstline_path::AbstractString="../../data/pure/1st.txt
     println("Done!")
 end
 
-main3()

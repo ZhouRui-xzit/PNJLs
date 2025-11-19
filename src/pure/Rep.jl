@@ -35,6 +35,26 @@ function Dmu4Omega(X0, T, mu_B)
     return ForwardDiff.derivative(x -> Dmu3Omega(X0, T, x), mu_B)
 end
 
+function  DTOmega(X0, T, mu_B)
+    # dP / dT
+    return ForwardDiff.derivative(x -> SolveOmega(X0, x, mu_B), T)
+end
+
+function DTTOmega(X0, T, mu_B)
+    # d^2 P / dT^2
+    return ForwardDiff.derivative(x -> DTOmega(X0, x, mu_B), T)
+end
+
+function DmuTOmega(X0, T, mu_B)
+    # d^2 P / dmu dT
+    return ForwardDiff.derivative(x -> DmuOmega(X0, x, mu_B), T)
+end
+
+
+
+
+
+
 # 涨落
 function Fluctuations(NewX, T, mu_B)
 
@@ -50,4 +70,26 @@ function Fluctuations(NewX, T, mu_B)
     return [T*197.33, mu_B*197.33, P, chi_mu, chi2_mu2, chi3_mu3, chi4_mu4]
 end
 
+
+
+function Ther_Rep(X0, T, mu_B,  P0)
+
+    P = SolveOmega(X0, T, mu_B) - P0
+    chi_T = DTOmega(X0, T, mu_B)
+    chi_mu = DmuOmega(X0, T, mu_B)
+    chi_mumu = Dmu2Omega(X0, T, mu_B)
+    chi_TT = DTTOmega(X0, T, mu_B)
+    chi_muT = DmuTOmega(X0, T, mu_B)
+
+    E = -P + T*chi_T + mu_B*chi_mu
+
+
+    v_n_2 = (chi_T * chi_mumu - chi_mu * chi_muT) / (T * (chi_mumu * chi_TT - chi_muT^2))
+    v_s_2 = (chi_T * chi_muT - chi_mu * chi_TT) / (mu_B * (chi_muT^2 - chi_TT * chi_mumu))
+    E = T * chi_T + mu_B * chi_mu - P
+    v_2 = (v_n_2 * T * chi_T + v_s_2 * mu_B * chi_mu) / (P + E)
+
+
+    return [T*197.33, mu_B*197.33, P, E, v_2]
+end
 
