@@ -8,6 +8,7 @@ using NaNMath   # nanlog
 using FastGaussQuadrature  # Gauss-Legendre 积分
 using MeshGrid # meshgrid
 using NLsolve # 非线性方程组求解器
+using NaNMath
 
 #  gauss 节点 和LL 节点
 function gauleg(a, b, n)
@@ -36,33 +37,57 @@ end
 
 
 
-function AA(x, T, Phi1, Phi2)
+function AA(x, T, Phi1, Phi2, q)
     """
     夸克分布归一化分母
     
     
     """
-    term1 = exp(-x / T)
-    term2 = exp(-2.0 * x / T)
-    term3 = exp(-3.0 * x / T)
+    term1 = exp_q(-x / T, q)
+    term2 = exp_q(-2.0 * x / T, q)
+    term3 = exp_q(-3.0 * x / T, q)
 
     result = 1.0 + 3.0 * Phi1 * term1 + 3.0 * Phi2 * term2 + term3
     return result
 end
 
-function AAbar(x, T, Phi1, Phi2)
+function AAbar(x, T, Phi1, Phi2, q)
     """
     反夸克分布归一化分母
     
 
     """
-    term1 = exp(-x / T)
-    term2 = exp(-2.0 * x / T)
-    term3 = exp(-3.0 * x / T)
+    term1 = exp_q(-x / T, q)
+    term2 = exp_q(-2.0 * x / T, q)
+    term3 = exp_q(-3.0 * x / T, q)
 
     result = 1.0 + 3.0 * Phi2 * term1 + 3.0 * Phi1 * term2 + term3
     return result
 end
+
+
+
+
+@inline function exp_q(x, q)
+   
+    if x>0
+        return (1 .+ (q-1).*x) .^(1/(q-1))
+    else
+        return (1 .+ (1-q).*x) .^(1/(1-q))
+    end
+end
+
+@inline function log_q(x, q)
+  
+    if x>0
+        return (x .^ (q-1).- 1) ./ (q-1)
+    else
+        return (x.^(1-q) .- 1) ./(1-q)
+    end
+end
+
+
+
 
 
 function dzeta(x, nodes_finite)
@@ -134,7 +159,7 @@ end
 
 
 
-function Omega(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
+function Omega(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
     # 1. 提前计算常用值
 
     P, N, W = gauss_nodes
@@ -162,7 +187,7 @@ function Omega(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
         E_plus = @. E_i + mu
         
 
-        log_sum = @. (log(AA(E_minus, T, Phi1, Phi2)) + log(AAbar(E_plus, T, Phi1, Phi2)))
+        log_sum = @. (log_q(AA(E_minus, T, Phi1, Phi2, q), q) + log_q(AAbar(E_plus, T, Phi1, Phi2, q), q))
         # 把 |q_f| 提到 flavor 循环的外层乘上
         term_log_sum += abs(qf[i]) * sum(log_sum .* W)
 
@@ -177,50 +202,50 @@ function Omega(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
 end
 
 # 对phi求导
-function dOmgea_dphi(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    return ForwardDiff.gradient(x -> Omega(x, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes), phi)
+function dOmgea_dphi(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    return ForwardDiff.gradient(x -> Omega(x, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes), phi)
 end
 
 
 # 对Phi1求导
-function dOmgea_dPhi1(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    return ForwardDiff.derivative(x -> Omega(phi, x, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes), Phi1)
+function dOmgea_dPhi1(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    return ForwardDiff.derivative(x -> Omega(phi, x, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes), Phi1)
 end
 
 # 对Phi2求导
-function dOmgea_dPhi2(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    return ForwardDiff.derivative(x -> Omega(phi, Phi1, x, T, mu_B, eB, gauss_nodes, zeta_nodes), Phi2)
+function dOmgea_dPhi2(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    return ForwardDiff.derivative(x -> Omega(phi, Phi1, x, T, mu_B, eB, q, gauss_nodes, zeta_nodes), Phi2)
 end
 
 
 # 对mu_B求导
-function dOmgea_dmu_B(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    return ForwardDiff.derivative(x -> Omega(phi, Phi1, Phi2, T, x, eB, gauss_nodes, zeta_nodes), mu_B)
+function dOmgea_dmu_B(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    return ForwardDiff.derivative(x -> Omega(phi, Phi1, Phi2, T, x, eB, q, gauss_nodes, zeta_nodes), mu_B)
 end
 
-function function_Quark_core(x_array, T, mu_B, eB, gauss_nodes, zeta_nodes)
+function function_Quark_core(x_array, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
     phi_u, phi_d, phi_s, Phi1, Phi2 = x_array
     phi = [phi_u, phi_d, phi_s]
-    dOmega_phi = dOmgea_dphi(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    dOmega_Phi1 = dOmgea_dPhi1(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    dOmega_Phi2 = dOmgea_dPhi2(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
+    dOmega_phi = dOmgea_dphi(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    dOmega_Phi1 = dOmgea_dPhi1(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    dOmega_Phi2 = dOmgea_dPhi2(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
     return [dOmega_phi[1], dOmega_phi[2], dOmega_phi[3], dOmega_Phi1, dOmega_Phi2]
 end
 
 
-function Quark_mu(x_array, T, mu_B, eB, int_params, zeta_nodes)
+function Quark_mu(x_array, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
     # 动态创建与输入类型兼容的数组
     T_out = promote_type(eltype(x_array), typeof(T), typeof(mu_B))
     fvec = zeros(T_out, 5)
 
-    fvec[1], fvec[2], fvec[3], fvec[4], fvec[5] = function_Quark_core(x_array, T, mu_B, eB, int_params, zeta_nodes)
+    fvec[1], fvec[2], fvec[3], fvec[4], fvec[5] = function_Quark_core(x_array, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
     return fvec
 end
  
 
 
 
-function Quark_rho(x_array, T, rho_B, eB, gauss_nodes, zeta_nodes)
+function Quark_rho(x_array, T, rho_B, eB, q, gauss_nodes, zeta_nodes)
     T_out = promote_type(eltype(x_array), typeof(T), typeof(rho_B))
 
     fvec = zeros(T_out, 6)
@@ -230,15 +255,15 @@ function Quark_rho(x_array, T, rho_B, eB, gauss_nodes, zeta_nodes)
     Phi2 = x_array[5]
 
     mu_B = x_array[6]
-    fvec[1], fvec[2], fvec[3], fvec[4], fvec[5] = function_Quark_core(X0, T, mu_B, eB, gauss_nodes, zeta_nodes)
-    rho_now = -1 * dOmgea_dmu_B(phi, Phi1, Phi2, T, mu_B, eB, gauss_nodes, zeta_nodes)
+    fvec[1], fvec[2], fvec[3], fvec[4], fvec[5] = function_Quark_core(X0, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
+    rho_now = -1 * dOmgea_dmu_B(phi, Phi1, Phi2, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
 
     fvec[6] = rho_now / rho0 - rho_B
     return fvec
 end
 
-function Tmu(T, mu_B, X0, eB, ints, zeta_nodes)
-    fWrapper(Xs) = Quark_mu(Xs, T, mu_B, eB, ints, zeta_nodes)
+function Tmu(T, mu_B, X0, eB, q, gauss_nodes, zeta_nodes)
+    fWrapper(Xs) = Quark_mu(Xs, T, mu_B, eB, q, gauss_nodes, zeta_nodes)
     res = nlsolve(fWrapper, X0, autodiff=:forward)
     if res.f_converged == false
         println("Warning: Solver did not converge for T=$(T*hc)")
@@ -248,8 +273,8 @@ function Tmu(T, mu_B, X0, eB, ints, zeta_nodes)
 end
 
 
-function Trho(T, rho_B, X0, eB, ints, zeta_nodes)
-    fWrapper(Xs) = Quark_rho(Xs, T, rho_B, eB, ints, zeta_nodes)
+function Trho(T, rho_B, X0, eB, q, gauss_nodes, zeta_nodes)
+    fWrapper(Xs) = Quark_rho(Xs, T, rho_B, eB, q, gauss_nodes, zeta_nodes)
     if rho_B<=1e-8
         res = nlsolve(fWrapper, X0, autodiff=:forward, xtol=1e-10, ftol=1e-13, method=:newton)
         println("xconverged: ", res.x_converged, ", fconverged: ", res.f_converged)

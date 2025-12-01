@@ -26,33 +26,45 @@ function main_Tmu()
 end
 
 function main_Trho()
-    T1s = 131.03:-0.1:130.03
-    T2s = 130:-2:10.0
-    Ts = vcat(T1s, T2s)
+
+    ints1 = get_nodes(200, nodes2=200)
+    ints2 = get_nodes(256, nodes2=500)
+
+    T1s = range(131.015625, 131.01, length=10)
+    T2s = range(131.00, 130.00, length=10)
+    T3s = range(130.0, 10.0, length=50)
+    Ts = unique!(vcat(collect(T1s), collect(T2s), collect(T3s)))
+
     rho1s = 3.00:-0.01:0.01
     rho2s = [1e-8, 5e-8, 1e-7, 5e-7, 1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
     rho2s = reverse(rho2s)
     rhos = vcat(rho1s, rho2s)
-    X0 = [-1.8,-1.8, -2.2, 0.01,0.01, 320/hc, 320/hc, 320/hc]  # phi_u, phi_d, phi_s, Phi1, Phi2, muB_div3, aux1, aux2
+    X00 = [-1.8,-1.8, -2.2, 0.01,0.01, 1000/hc]  # 重置初始猜测
+    X0 = similar(X00)
     lens = length(Ts) * length(rhos)
-    data = zeros(lens, 9)  # T, rho_B, mu_B, P, phi_u, phi_d, phi_s, Phi1, Phi2
+    data = zeros(lens, 8)  # T, rho_B, mu_B, phi_u, phi_d, phi_s, Phi1, Phi2
     for (i, T) in enumerate(Ts)
         println("T = $T MEV")
-        X0 = [-1.8,-1.8, -2.2, 0.01,0.01, 320/hc, 320/hc, 320/hc]  # 重置初始猜测
+        if T >= 30.0
+            ints = ints1
+        else
+            ints = ints2
+        end
+        X0 = X00
         for (j, rho_B) in enumerate(rhos)
             idx = (i-1)*length(rhos) + j
             
-            X0 = Trho(T/hc, rho_B, X0)
+            X0 = Trho(T/hc, rho_B, X0, ints)
             mu = X0[6] * hc 
-            phi = X0[1:3] 
-            Phi1 = X0[4]
-            Phi2 = X0[5]
-            P = -Omega(phi, Phi1, Phi2, T/hc, mu/hc) 
-            data[idx, :] = [T, rho_B, mu, P, X0[1:5]...]
+            
+            data[idx, :] = [T, rho_B, mu, X0[1:5]...]
+            if j==1
+                X00 = X0
+            end
         end
     end
-    df = DataFrame(data, [:T, :rho_B, :mu, :P, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
-    CSV.write("../../data/pure/T_rho_B_scan0923.dat", df)
+    df = DataFrame(data, [:T, :rho_B, :mu, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
+    CSV.write("../../data/pure/T_rho_B_scan1123.dat", df)
 end
 
 

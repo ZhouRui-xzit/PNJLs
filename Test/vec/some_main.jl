@@ -13,6 +13,8 @@ function generate_rhos2(n::Int)
     #push!(rhos2, 0.05)  # 确保包含终点
     return sort(rhos2)
 end
+
+
 function data_Gv(;theta=0.0)
     # theta = 0.0 P0== 25.38212212875826
     sol_path = "../../data/axion_red_vec/vac_sol_Gv=0.5.csv"

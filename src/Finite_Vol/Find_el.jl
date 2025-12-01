@@ -228,8 +228,8 @@ function main(;paras=paras, T_min=125.0, T_max=135.0)
 end
 
 function start_el()
-    R = 30.0
-    delta = 0.0
+    R = 100.0
+    delta = 0.7
     paras = parametrize_deformation(R, delta;para=3.0,scale=-1.0)
     main(;paras=paras, T_min=80, T_max=130)
 end

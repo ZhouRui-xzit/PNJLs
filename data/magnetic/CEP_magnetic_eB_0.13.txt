@@ -1,0 +1,8 @@
+Magnetic PNJL CEP Results @ 2025-11-27T21:35:31.076
+eB = 0.13 MeV²
+============================================================
+
+CEP #1: standard_cep
+  T_CEP = 131.8671875 ± 0.00390625 MeV
+  Transition: single -> none
+  Iterations: 7

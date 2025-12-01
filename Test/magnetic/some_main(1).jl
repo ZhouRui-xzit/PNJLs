@@ -1,4 +1,5 @@
-include("../../src/magnetic/pnjl_magnetic.jl")
+using Revise
+includet("../../src/magnetic/pnjl_magnetic.jl")
 using Plots
 using LaTeXStrings
 using DataFrames, CSV
@@ -10,8 +11,8 @@ function main_eBs()
     NewX = zeros(5)
     mu_B = 10.0
     eBs = [0.20, 0.40, 0.60 ,0.80]
-    Nodes = get_nodes(128, 100)
-
+    Nodes1 = get_nodes(128, 100)
+    nodes = gauleg(0.0, 100, 500)
     lens = length(Ts) * length(eBs)
     data = zeros(lens, 7)
     
@@ -21,7 +22,7 @@ function main_eBs()
         for (j, T) in enumerate(Ts)
             println("-------------------------------T = ", T)
             idx = (i - 1) * length(Ts) + j
-            NewX = Tmu(T/hc, mu_B/hc, X0, eB*(1000/hc)^2, Nodes)
+            NewX = Tmu(T/hc, mu_B/hc, X0, eB*(1000/hc)^2, Nodes, nodes)
             data[idx, 1] = T
             data[idx, 2] = eB
             data[idx, 3:end] = NewX
@@ -75,38 +76,50 @@ function main_eBs2()
 end
 
 
+function generate_rhos2(n::Int)
+    rhos2 = Float64[]
+    for e in -n:-2
+        push!(rhos2, 1.0 * 10.0^e)
+        push!(rhos2, 5.0 * 10.0^e)
+    end
+    #push!(rhos2, 0.05)  # 确保包含终点
+    return sort(rhos2)
+end
 
-function main_rho(T)
-    #rhos1 = 5:-0.01:0.01
-    #rhos2 = [1e-8, 5e-8, 1e-7, 5e-7, 1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
-    #rhos2 = reverse(rhos2)
-    #rhos = vcat(rhos1, rhos2)
-    #rhos = sort(rhos)
-    rhos = 0.01:0.01:5.0
-    eBs = [0.05]
-    X0 = [-2.8,-2.8, -2.2, 0.01,0.01, 320/hc, 320/hc, 320/hc]  # phi_u, phi_d, phi_s, Phi1, Phi2, muB_div3, aux1, aux2
-    data = zeros(length(rhos), 8) 
-    Nodes = get_nodes(128, 100)
+
+function main_rho(;T=50.0)
+    rhos1 = 4.00:-0.01:0.01
+    rhos2 = generate_rhos2(13)
+    rhos2 = reverse(rhos2)
+    rhos = vcat(rhos1, rhos2)
+    rhos = sort(rhos, rev=true)
+    #rhos = 1.00:-0.01:0.01
+    eBs = [0.13]
+    mub = 1200.11978  # MeV
+    X0 = [-0.15025, -0.14023, -2.06331, 0.05312, 0.07734, mub/hc]
+   
+    data = zeros(length(rhos), 9) 
+    Nodes = get_nodes(500, 20)
+    nodes = gauleg(0, 1, 256)
     for eB in eBs
         println("eB = ", eB, " T = ", T)
         for (i, rho) in enumerate(rhos)
             println("-------------------------------rho = ", rho)
-            NewX = Trho(T/hc, rho, X0, eB*(1000/hc)^2, Nodes)
-            data[i, 1] = rho  # rho_B/rho
-            data[i, 2] = eB # GeV^2
-            data[i, 3:7] = NewX[1:5] # phi_u, phi_d, phi_s, Phi1, Phi2
-            data[i, 8] = NewX[6] * 3 * hc # mu_B in MeV
+            NewX = Trho(T/hc, rho, X0, eB*(1000/hc)^2, Nodes, nodes)
+            data[i, 1] = T  # MeV
+            data[i, 2] = rho  # rho_B/rho
+            data[i, 3] = eB # GeV^2
+            data[i, 4:8] = NewX[1:5] # phi_u, phi_d, phi_s, Phi1, Phi2
+            data[i, 9] = NewX[6] * hc  # mu_B MeV
             X0 = NewX 
-            println("mu_B = ", data[i, 8])
+            println("mu_B = ", data[i, 9])
         end
-        outpath = "../../data/magnetic/Trho_eB_$(round(eB,digits=2)).dat"
-        df = DataFrame(data, [:rho_B, :mu_B, :eB])
+        outpath = "../../data/magnetic/Trho_eB_$(round(eB,digits=2))_T=$(T).dat"
+        df = DataFrame(data, [:T, :rho_B, :eB, :phiu, :phid, :phis, :Phi1, :Phi2, :mu_B])
         CSV.write(outpath, df)
         println("Data saved to ", outpath)
     end
 end
 
-
-main_eBs2()
 
 #@time main_rho(30)

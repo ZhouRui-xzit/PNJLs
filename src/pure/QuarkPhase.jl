@@ -114,9 +114,9 @@ function find_Trho(mu, rho)
 end
 
 function main1()
-    df = CSV.read("../../data/pure/T_rho_B_scan.dat", DataFrame)
+    df = CSV.read("../../data/pure/T_rho_B_scan1123.dat", DataFrame)
     T = df.T
-    mu = df.mu_B
+    mu = df.mu
     rho = df.rho_B
 
     Ts = unique(T)
@@ -145,8 +145,8 @@ function main1()
         rho_plus = data[:, 5],
         mu_star  = data[:, 6],
     )
-    CSV.write("../../data/pure/Trho_Maxwell.dat", df)
-    println("结果已保存至 ../../data/pure/Trho_Maxwell.dat")
+    CSV.write("../../data/pure/Trho_Maxwell1123.dat", df)
+    println("结果已保存至 ../../data/pure/Trho_Maxwell1123.dat")
 end
 
 function main2()
@@ -157,9 +157,4 @@ function main2()
     println("T = 130.9")
     result = find_Trho(mu, rho)
     println(result)
-end
-
-if abspath(PROGRAM_FILE) == @__FILE__
-    main1()
-    #main2()
 end

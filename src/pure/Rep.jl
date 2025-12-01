@@ -2,52 +2,52 @@ includet("Pnjl_pure.jl")
 using CSV 
 using DataFrames
 
-function SolveOmega(X0, T, mu_B,)
+function SolveOmega(X0, T, mu_B, ints)
     X0_typed = convert.(promote_type(eltype(X0), typeof(T), typeof(mu_B)), X0)
     
-    fWrapper(Xs) = Quark_mu(Xs, T, mu_B)
+    fWrapper(Xs) = Quark_mu(Xs, T, mu_B, ints)
 
     res = nlsolve(fWrapper, X0_typed, autodiff=:forward)
     NewX = res.zero
     phi = NewX[1:3]
     Phi1 = NewX[4]
     Phi2 = NewX[5]
-    return -Omega(phi, Phi1, Phi2, T, mu_B)
+    return -Omega(phi, Phi1, Phi2, T, mu_B, ints)
 end
 
 
-function DmuOmega(X0, T, mu_B)
-    return ForwardDiff.derivative(x -> SolveOmega(X0, T, x), mu_B)
+function DmuOmega(X0, T, mu_B, ints)
+    return ForwardDiff.derivative(x -> SolveOmega(X0, T, x, ints), mu_B)
 end
 
-function Dmu2Omega(X0, T, mu_B)
+function Dmu2Omega(X0, T, mu_B, ints)
     # d^2 P / dmu^2
-    return ForwardDiff.derivative(x -> DmuOmega(X0, T, x), mu_B)
+    return ForwardDiff.derivative(x -> DmuOmega(X0, T, x, ints), mu_B)
 end
 
-function Dmu3Omega(X0, T, mu_B)
+function Dmu3Omega(X0, T, mu_B, ints)
     # d^3 P / dmu^3
-    return ForwardDiff.derivative(x -> Dmu2Omega(X0, T, x), mu_B)
+    return ForwardDiff.derivative(x -> Dmu2Omega(X0, T, x, ints), mu_B)
 end
 
-function Dmu4Omega(X0, T, mu_B)
+function Dmu4Omega(X0, T, mu_B, ints)
     # d^4 P / dmu^4
-    return ForwardDiff.derivative(x -> Dmu3Omega(X0, T, x), mu_B)
+    return ForwardDiff.derivative(x -> Dmu3Omega(X0, T, x, ints), mu_B)
 end
 
-function  DTOmega(X0, T, mu_B)
+function  DTOmega(X0, T, mu_B, ints)
     # dP / dT
-    return ForwardDiff.derivative(x -> SolveOmega(X0, x, mu_B), T)
+    return ForwardDiff.derivative(x -> SolveOmega(X0, x, mu_B, ints), T)
 end
 
-function DTTOmega(X0, T, mu_B)
+function DTTOmega(X0, T, mu_B, ints)
     # d^2 P / dT^2
-    return ForwardDiff.derivative(x -> DTOmega(X0, x, mu_B), T)
+    return ForwardDiff.derivative(x -> DTOmega(X0, x, mu_B, ints), T)
 end
 
-function DmuTOmega(X0, T, mu_B)
+function DmuTOmega(X0, T, mu_B, ints)
     # d^2 P / dmu dT
-    return ForwardDiff.derivative(x -> DmuOmega(X0, x, mu_B), T)
+    return ForwardDiff.derivative(x -> DmuOmega(X0, x, mu_B, ints), T)
 end
 
 
@@ -56,13 +56,13 @@ end
 
 
 # 涨落
-function Fluctuations(NewX, T, mu_B)
+function Fluctuations(NewX, T, mu_B, ints)
 
-    chi_mu = DmuOmega(NewX, T, mu_B) / T^3     # n = dP/dmu
-    chi2_mu2 = Dmu2Omega(NewX, T, mu_B) / T^2 # d2P/dmu2
-    chi3_mu3 = Dmu3Omega(NewX, T, mu_B) /T # d3P/dmu3
-    chi4_mu4 = Dmu4Omega(NewX, T, mu_B) # d4P/dmu4
-    P = SolveOmega(NewX, T, mu_B) / T^4 
+    chi_mu = DmuOmega(NewX, T, mu_B, ints) / T^3     # n = dP/dmu
+    chi2_mu2 = Dmu2Omega(NewX, T, mu_B, ints) / T^2 # d2P/dmu2
+    chi3_mu3 = Dmu3Omega(NewX, T, mu_B, ints) /T # d3P/dmu3
+    chi4_mu4 = Dmu4Omega(NewX, T, mu_B, ints) # d4P/dmu4
+    P = SolveOmega(NewX, T, mu_B, ints)
     chi21 = chi2_mu2 / chi_mu
     chi31 = chi3_mu3 / chi_mu
     chi42 = chi4_mu4 / chi2_mu2
@@ -72,14 +72,14 @@ end
 
 
 
-function Ther_Rep(X0, T, mu_B,  P0)
+function Ther_Rep(X0, T, mu_B,  P0, ints)
 
-    P = SolveOmega(X0, T, mu_B) - P0
-    chi_T = DTOmega(X0, T, mu_B)
-    chi_mu = DmuOmega(X0, T, mu_B)
-    chi_mumu = Dmu2Omega(X0, T, mu_B)
-    chi_TT = DTTOmega(X0, T, mu_B)
-    chi_muT = DmuTOmega(X0, T, mu_B)
+    P = SolveOmega(X0, T, mu_B, ints) - P0
+    chi_T = DTOmega(X0, T, mu_B, ints)
+    chi_mu = DmuOmega(X0, T, mu_B, ints)
+    chi_mumu = Dmu2Omega(X0, T, mu_B, ints)
+    chi_TT = DTTOmega(X0, T, mu_B, ints)
+    chi_muT = DmuTOmega(X0, T, mu_B, ints)
 
     E = -P + T*chi_T + mu_B*chi_mu
 

@@ -188,9 +188,9 @@ end
 
 function main_Trho()
     println("Time:", Dates.now())
-    #path = "../../data/FV/T_rho_B_scan_R=$R.dat"
-    el = 1.0
-    path = "../../data/FV/T_rho_B_single_el=1.0.dat"
+    R = 100.0
+    e = 1.0
+    path = "../../data/FV/T_rho_B_R=$(R)_e=$(e).dat"
     df = CSV.read(path, DataFrame)
     T = df.T
     mu = df.mu
@@ -240,7 +240,7 @@ function main_Trho()
     )
     #outpath = "../../data/FV/Trho_MaxwellR=$R.dat"
 
-    outpath = "../../data/FV/Trho_Maxwell_el=$el.dat"
+    outpath = "../../data/FV/Trho_Maxwell_R=$(R)_e=$(e).dat"
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")
 end
@@ -249,8 +249,10 @@ end
 
 function main_Tmu()
     println("Time:", Dates.now())
-    e = 0.0
-    path = "../../data/FV/T_mu_B_scan_el=0.0.dat"
+    R = 100.0
+    e = 1.0
+    T_CEP = 121.4296875
+    path = "../../data/FV/T_mu_B_R=$(R)_e=$(e).dat"
     df = CSV.read(path, DataFrame)
     T = df.T
     phi_u = df.phi_u
@@ -266,11 +268,13 @@ function main_Tmu()
         println("T_c = $T_i")
         data[i, :] .= (mu_i, T_i)
     end
-    df = DataFrame(
-        mu_B = data[:, 1],
-        T_c  = data[:, 2],
-    )
-    outpath = "../../data/FV/Tmu_Tc_el=$e.dat"
+
+    mask = data[:, 2] .>= T_CEP
+    data = data[mask, :]
+    df = DataFrame(mu_B = data[:, 1], T_c = data[:, 2])
+
+
+    outpath = "../../data/FV/Tmu_Tc_R=$(R)_e=$(e).dat"
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")
 end

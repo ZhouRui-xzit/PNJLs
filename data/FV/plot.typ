@@ -18,21 +18,21 @@
 // 设置数学公式字体
 #show math.equation: set text(font: "Latin Modern Math")
 
+// 设置页面为自动大小
+#set page(width: auto, height: auto, margin: 1em)
 
 
-
-
-
-= phi-T 曲线
-
-
+#let make-yaxis(ymin, ymax, step) = {
+  let n = int((ymax - ymin) / step)
+  range(0, n + 1, step: 1)
+}
 
 
 
 
 // 自动获取所有R值
-#let all_R_values_eV1 = get_all_R_values("FV/equal_VR=10.0.csv")
-#let data_eV1 = fig_phiT("FV/equal_VR=10.0.csv")
+#let all_R_values_eV1 = get_all_R_values("FV/1st/D_V_R=30.0.csv")
+#let data_eV1 = fig_phiT("FV/1st/D_V_R=30.0.csv")
 #let plots_eV1 = ()
 #for (i, r) in all_R_values_eV1.enumerate() {
   let key = str(r)
@@ -65,21 +65,19 @@
 )
 ]
 
-
-
-
+#pagebreak()
 
 
 // 自动获取所有R值
-#let all_R_values_eV3 = get_all_R_values("FV/D_V_R=30.0.csv")
-#let data_eV3 = fig_phiT("FV/D_V_R=30.0.csv")
-#let plots_eV3 = ()
-#for (i, r) in all_R_values_eV3.enumerate() {
+#let all_R_values_eV1 = get_all_R_values("FV/1st/D_V_R=100.0.csv")
+#let data_eV1 = fig_phiT("FV/1st/D_V_R=100.0.csv")
+#let plots_eV1 = ()
+#for (i, r) in all_R_values_eV1.enumerate() {
   let key = str(r)
-  plots_eV3.push(
+  plots_eV1.push(
     lq.plot(
-      data_eV3.at(key).T, data_eV3.at(key).phi,
-      stroke: (thickness:1.5pt, paint: line_color.at(("a", "b", "c", "d", "e", "f", "g", "h").at(calc.rem(i, 8))),
+      data_eV1.at(key).T, data_eV1.at(key).phi,
+      stroke: (thickness:1.5pt, paint: line_color.at(("a", "b", "c", "d", "e", "f", "g", "h").at(calc.rem(i, 8))), 
       dash:lines_style.b),
       mark: none,
       label:[ $e=#r$ ]
@@ -95,90 +93,53 @@
   height: 7cm,
   xlabel: [ $T$ (MeV) ],
   ylabel: [ $phi.alt_u$ ],
-  title: [ $V=4pi\/3 * 30^3 upright(f m)^3$ ],
+  title: [ $V=4pi\/3 * 100^3 upright(f m)^3$ ],
   xlim: (10.0, 300.0),
   ylim: (-2, 0.1),
   xaxis:(subticks:1),
   yaxis:(subticks:9, ticks:range(-2, 0, step:1)),
   legend: (position: top + left),
-  ..plots_eV3
+  ..plots_eV1
 )
 ]
 
-
-// 自动获取所有R值
-#let all_R_values_eV4 = get_all_R_values("FV/N_V_R=10.0.csv")
-#let data_eV4 = fig_phiT("FV/N_V_R=10.0.csv")
-#let plots_eV4 = ()
-#for (i, r) in all_R_values_eV4.enumerate() {
-  let key = str(r)
-  plots_eV4.push(
-    lq.plot(
-      data_eV4.at(key).T, data_eV4.at(key).phi,
-      stroke: (thickness:1.5pt, paint: line_color.at(("a", "b", "c", "d", "e", "f", "g", "h").at(calc.rem(i, 8))),
-      dash:lines_style.b),
-      mark: none,
-      label:[ $e=#r$ ]
-    )
-  )
-}
+#pagebreak()
 
 
-// 然后将这些绘图命令作为参数传递给 diagram
-#align(center)[
-  #lq.diagram(
-  width: 10cm,
-  height: 7cm,
-  xlabel: [ $T$ (MeV) ],
-  ylabel: [ $phi.alt_u$ ],
-  title: [ $V=4pi\/3 * 10^3 upright(f m)^3$ ],
-  xlim: (10.0, 300.0),
-  ylim: (-2, 0.1),
-  xaxis:(subticks:1),
-  yaxis:(subticks:9, ticks:range(-2, 0, step:1)),
-  legend: (position: top + left),
-  ..plots_eV4
-)
-]
-
-== 声速曲线
 
 
-#let data_cs1 = csv("rep_mu=R30.0e0.0_950.0.csv")
-#let data_cs2 = csv("rep_mu=R30.0e0.3_950.0.csv")
-#let data_cs3 = csv("rep_mu=R30.0e0.7_950.0.csv")
-#let data_cs4 = csv("rep_mu=R30.0e1.0_950.0.csv")
+
+#let data_cs1 = csv("cs/rep_T=110.0_R=30.0_e=0.0_all.csv")
+#let data_cs2 = csv("cs/rep_T=110.0_R=30.0_e=0.3_all.csv")
+#let data_cs3 = csv("cs/rep_T=110.0_R=30.0_e=0.7_all.csv")
+#let data_cs4 = csv("cs/rep_T=110.0_R=30.0_e=1.0_all.csv")
 
 // 提取数据列
-#let T_data1 = data_cs1.slice(1).map(row => float(row.at(0)))
+#let T_data1 = data_cs1.slice(1).map(row => float(row.at(1)))
 #let cs2_data1 = data_cs1.slice(1).map(row => float(row.at(4)))
 
-#let T_data2 = data_cs2.slice(1).map(row => float(row.at(0)))
-#let cs2_data2 = data_cs2.slice(1).map(row => float(row.at(4)))
+#let T_data2 = data_cs2.slice(1).map(row => float(row.at(1)))
+#let cs2_data2 = data_cs2.slice(1).map(row => float(row.at(1)))
 
-#let T_data3 = data_cs3.slice(1).map(row => float(row.at(0)))
+#let T_data3 = data_cs3.slice(1).map(row => float(row.at(1)))
 #let cs2_data3 = data_cs3.slice(1).map(row => float(row.at(4)))
 
-#let T_data4 = data_cs4.slice(1).map(row => float(row.at(0)))
+#let T_data4 = data_cs4.slice(1).map(row => float(row.at(1)))
 #let cs2_data4 = data_cs4.slice(1).map(row => float(row.at(4)))
-
-
-
-
 
 
 #align(center)[
   #lq.diagram(
     width: 10cm,
     height: 7cm,
-    xlabel: [ $T$ (MeV) ],
+    xlabel: [ $mu_B$ (MeV) ],
     ylabel: [ $c_(s\/rho_B)^2$ ],
-    title: [  $mu_B = 950 upright(M e V)$  ],
-    xlim: (50.0, 300.0),
+    title: [  $T = 110 upright(M e V)$  ],
+    xlim: (100.0, 1200.0),
     ylim: (0.0, 0.35),
     xaxis:(subticks:1),
     yaxis:(subticks:1),
-    legend: (position: bottom + right),
+    legend: (position: top + right),
     lq.plot(
       T_data1, cs2_data1,
       stroke: (thickness:2pt, paint: blue, dash: lines_style.b),
@@ -209,65 +170,158 @@
   )
 ]
 
+#pagebreak()
 
 
-#let data_cs01 = csv("rep_mu=R30.0e0.0_1.0.csv")
-#let data_cs02 = csv("rep_mu=R30.0e0.3_1.0.csv")
-#let data_cs03 = csv("rep_mu=R30.0e0.7_1.0.csv")
-#let data_cs04 = csv("rep_mu=R30.0e1.0_1.0.csv")
+
+#let data_cs31a = csv("cs/rep_T=90.0_R=30.0_e=0.0_before.csv")
+#let data_cs31b = csv("cs/rep_T=90.0_R=30.0_e=0.0_after.csv")
+
+#let data_cs32a= csv("cs/rep_T=90.0_R=30.0_e=0.3_before.csv")
+#let data_cs32b = csv("cs/rep_T=90.0_R=30.0_e=0.3_after.csv")
+
+#let data_cs33 = csv("cs/rep_T=90.0_R=30.0_e=0.7_all.csv")
+#let data_cs34 = csv("cs/rep_T=90.0_R=30.0_e=1.0_all.csv")
+
+
 
 // 提取数据列
-#let T_data01 = data_cs01.slice(1).map(row => float(row.at(0)))
-#let cs2_data01 = data_cs01.slice(1).map(row => float(row.at(4)))
+#let T_data31a = data_cs31a.slice(1).map(row => float(row.at(1)))
+#let T_data31b = data_cs31b.slice(1).map(row => float(row.at(1)))
+#let T_data32a = data_cs32a.slice(1).map(row => float(row.at(1)))
+#let T_data32b = data_cs32b.slice(1).map(row => float(row.at(1)))
+#let T_data33 = data_cs33.slice(1).map(row => float(row.at(1)))
+#let T_data34 = data_cs34.slice(1).map(row => float(row.at(1)))
 
-#let T_data02 = data_cs02.slice(1).map(row => float(row.at(0)))
-#let cs2_data02 = data_cs02.slice(1).map(row => float(row.at(4)))
 
-#let T_data03 = data_cs03.slice(1).map(row => float(row.at(0)))
-#let cs2_data03 = data_cs03.slice(1).map(row => float(row.at(4)))
 
-#let T_data04 = data_cs04.slice(1).map(row => float(row.at(0)))
-#let cs2_data04 = data_cs04.slice(1).map(row => float(row.at(4)))
+#let cs_31a = data_cs31a.slice(1).map(row => float(row.at(4)))
+#let cs_31b = data_cs31b.slice(1).map(row => float(row.at(4)))
+
+#let cs_32a = data_cs32a.slice(1).map(row => float(row.at(4)))
+#let cs_32b = data_cs32b.slice(1).map(row => float(row.at(4)))
+
+#let cs_33 = data_cs33.slice(1).map(row => float(row.at(4)))
+#let cs_34 = data_cs34.slice(1).map(row => float(row.at(4)))
+
+#let cv_31a = data_cs31a.slice(1).map(row => float(row.at(5)))
+#let cv_31b = data_cs31b.slice(1).map(row => float(row.at(5)))
+#let cv_32a = data_cs32a.slice(1).map(row => float(row.at(5)))
+#let cv_32b = data_cs32b.slice(1).map(row => float(row.at(5)))
+#let cv_33 = data_cs33.slice(1).map(row => float(row.at(5)))
+#let cv_34 = data_cs34.slice(1).map(row => float(row.at(5)))
+
+
+
+
+
 
 
 #align(center)[
   #lq.diagram(
     width: 10cm,
     height: 7cm,
-    xlabel: [ $T$ (MeV) ],
+    xlabel: [ $mu_B$ (MeV) ],
     ylabel: [ $c_(s\/rho_B)^2$ ],
-    title: [  $mu_B = 0 upright(M e V)$  ],
-    xlim: (50.0, 300.0),
+    title: [  $T = 90 upright(M e V)$  ],
+    xlim: (100.0, 1200.0),
     ylim: (0.0, 0.35),
     xaxis:(subticks:1),
     yaxis:(subticks:1),
-    legend: (position: bottom + right),
+    legend: (position: top + right),
     lq.plot(
-      T_data01, cs2_data01,
-      stroke: (thickness:1pt, paint: blue, dash: lines_style.b),
+      T_data31a, cs_31a,
+      stroke: (thickness:2pt, paint: blue, dash: lines_style.b),
       mark: none,
       label: [ $e=0.0$ ]
     ),
 
     lq.plot(
-      T_data02, cs2_data02,
-      stroke: (thickness:1pt, paint: red, dash: lines_style.c),
+      T_data31b, cs_31b,
+      stroke: (thickness:2pt, paint: blue, dash: lines_style.b),
+      mark: none,
+      //label: [ $e=0.0$ ]
+    ),
+    lq.plot(
+      T_data32a, cs_32a,
+      stroke: (thickness:2pt, paint: red, dash: lines_style.b),
       mark: none,
       label: [ $e=0.3$ ]
     ),
     lq.plot(
-      T_data03, cs2_data03,
-      stroke: (thickness:1pt, paint: green, dash: lines_style.d),
+      T_data32b, cs_32b,
+      stroke: (thickness:2pt, paint: red, dash: lines_style.b),
+      mark: none,
+      //label: [ $e=0.3$ ]
+    ),
+    lq.plot(
+      T_data33, cs_33,
+      stroke: (thickness:2pt, paint: green, dash: lines_style.c),
       mark: none,
       label: [ $e=0.7$ ]
     ),
-
     lq.plot(
-      T_data04, cs2_data04,
-      stroke: (thickness:1pt, paint: orange, dash: lines_style.e),
+      T_data34, cs_34,
+      stroke: (thickness:2pt, paint: orange, dash: lines_style.d),
       mark: none,
       label: [ $e=1.0$ ]
-    )
-
+      )
   )
 ]
+
+#pagebreak()
+
+#align(center)[
+  #lq.diagram(
+    width: 10cm,
+    height: 7cm,
+    xlabel: [ $mu_B$ (MeV) ],
+    ylabel: [ $C_V$ ],
+    title: [  $T = 90 upright(M e V)$  ],
+    xlim: (100.0, 1200.0),
+    ylim: (0.0, 4.0),
+    xaxis:(subticks:1),
+    yaxis:(subticks:1, ticks:make-yaxis(0.0, 4.0, 0.5)),
+    legend: (position: top + left),
+    lq.plot(
+      T_data31a, cv_31a,
+      stroke: (thickness:2pt, paint: blue, dash: lines_style.b),
+      mark: none,
+      label: [ $e=0.0$ ]
+    ),
+
+    lq.plot(
+      T_data31b, cv_31b,
+      stroke: (thickness:2pt, paint: blue, dash: lines_style.b),
+      mark: none,
+      //label: [ $e=0.0$ ]
+    ),
+    lq.plot(
+      T_data32a, cv_32a,
+      stroke: (thickness:2pt, paint: red, dash: lines_style.b),
+      mark: none,
+      label: [ $e=0.3$ ]
+    ),
+    lq.plot(
+      T_data32b, cv_32b,
+      stroke: (thickness:2pt, paint: red, dash: lines_style.b),
+      mark: none,
+      //label: [ $e=0.3$ ]
+    ),
+    lq.plot(
+      T_data33, cv_33,
+      stroke: (thickness:2pt, paint: green, dash: lines_style.c),
+      mark: none,
+      label: [ $e=0.7$ ]
+    ),
+    lq.plot(
+      T_data34, cv_34,
+      stroke: (thickness:2pt, paint: orange, dash: lines_style.d),
+      mark: none,
+      label: [ $e=1.0$ ]
+      )
+  )
+]
+
+
+#pagebreak()
