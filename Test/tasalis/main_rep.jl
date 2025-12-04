@@ -15,12 +15,14 @@ function main_rep(;mu_B=10.0)
     data = zeros(length(Ts), 5)
     P0 = 20.1235
     sol[:, 1] = Ts
-    for eB in eBs 
+    for eB in eBs
+        println("Calculations for eB = ", eB, ) 
         for q in qs
+            println("q = ", q)
             X0 = [-0.01, -0.01, -0.20, 0.8, 0.8]
             for (i, T) in enumerate(Ts)
                 if i % 10 == 0
-                    println("Calculating T = ", T, " MeV; Step ", i, " of ", length(Ts))
+                    println("---------------------------Calculating T = ", T, " MeV; Step ", i, " of ", length(Ts))
                 end
                 NewX = Tmu(T/hc, mu_B/hc, X0, eB*(1000/hc)^2, q, Nodes, nodes)
                 

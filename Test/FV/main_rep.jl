@@ -168,10 +168,8 @@ function main_rep_mu(; T::Float64 = 100.0)
     固定温度 T，化学势 mu_B 从小到大扫描
     自动识别并跳过一阶相变线
     """
-    firstline_path = "../../data/FV/1st/first_R30_e00.csv"
-    firstline_path = "../../data/FV/1st/first_R30_e03.csv"
-    firstline_path = "../../data/FV/1st/first_R30_e07.csv"
-    firstline_path = "../../data/FV/1st/first_R30_e00.csv"
+  
+
     paths = [
         "../../data/FV/1st/first_R30_e00.csv",
         "../../data/FV/1st/first_R30_e03.csv",
@@ -184,6 +182,23 @@ function main_rep_mu(; T::Float64 = 100.0)
         (30.0, 0.7),
         (30.0, 1.0),
     ]
+
+   """ 
+    paths = [
+        "../../data/FV/1st/first_R100_e00.csv",
+        "../../data/FV/1st/first_R100_e03.csv",
+        "../../data/FV/1st/first_R100_e07.csv",
+        "../../data/FV/1st/first_R100_e10.csv",
+    ]
+    Res = [
+        (100.0, 0.0),
+        (100.0, 0.3),
+        (100.0, 0.7),
+        (100.0, 1.0),
+    ]
+""" 
+
+
 
     for (path, (R, e)) in zip(paths, Res)
         println("Processing firstline file: $path")
@@ -210,7 +225,7 @@ end
 
 function calc_mu(T, firstline_path, R, e)
         
-    mu_Bs = 10.0:10.0:1200.0   # 单位：MeV
+    mu_Bs = 10.0:6.0:1200.0   # 单位：MeV
     a, b, c = parametrize_deformation(R, e; para=3.0, scale=-1.0)
     ints = get_nodes_el(200, a, b, c, modes="D")
 
@@ -226,7 +241,7 @@ function calc_mu(T, firstline_path, R, e)
     mu_unique = df_unique.mu_star
 
     # 如果数据不足或不单调请根据实际情况处理
-    mu_of_T = Spline1D(T_unique, mu_unique, k=3, bc="error")
+    mu_of_T = Spline1D(T_unique, mu_unique, k=1, bc="error")
     T_min, T_max = extrema(T_unique)
 
     in_firstline_range = (T_min <= T <= T_max)
