@@ -20,6 +20,37 @@
 
 
 = M-R relation plots 
+
+
+// 函数：生成观测质量约束带
+#let generate_mass_bands() = {
+  let bands = ()
+  
+  // 定义观测数据：(质量中心值, 误差, 颜色)
+  let observations = (
+    (2.01, 0.04, "#cd313164"),     // PSR J0740+6620
+    (1.667, 0.021, "#4169e164"),   // PSR J0348+0432
+    (1.4408, 0.008, "#228b2264"),  // PSR J0737-3039A
+    (1.30, 0.02, "#ffa50064"),     // PSR J1614-2230
+  )
+  
+  for (mass, error, color) in observations {
+    bands.push(
+      lq.fill-between(
+        (0, 15.0),
+        (mass - error, mass - error),
+        y2: (mass + error, mass + error),
+        fill: rgb(color),
+        stroke: none,
+        z-index: 0
+      )
+    )
+  }
+  
+  return bands
+}
+
+
 // 生成多个R-M图像的绘制命令
 // 函数：批量读取CSV文件并生成绘图命令
 #let generate_plots(filenames, labels) = {
@@ -69,8 +100,16 @@
     ylim: (-0.1, 2.5),
     xaxis:(subticks:1),
     yaxis:(subticks:3, ticks:range(0, 3, step:1)),
-    legend: (position: top + left),
+    legend: (position: bottom + right),
+    lq.place(13.5, 2.15)[#text(size:10pt)[J0348+0432]],
+    lq.place(13.5, 1.75)[#text(size:10pt)[J1903+0327]],
+    lq.place(13.5, 1.50)[#text(size:10pt)[B1913+16]],
+    lq.place(13.5, 1.20)[#text(size:10pt)[J1141-6545]],
+
+    ..generate_mass_bands(),  // 添加观测质量约束带
     ..plots  // 使用展开语法
+
+    
   )
 ]
 
@@ -102,7 +141,13 @@
     ylim: (-0.1, 2.5),
     xaxis:(subticks:1),
     yaxis:(subticks:3, ticks:range(0, 3, step:1)),
-    legend: (position: top + left),
+    legend: (position: bottom + right),
+    lq.place(13.5, 2.15)[#text(size:10pt)[J0348+0432]],
+    lq.place(13.5, 1.75)[#text(size:10pt)[J1903+0327]],
+    lq.place(13.5, 1.50)[#text(size:10pt)[B1913+16]],
+    lq.place(13.5, 1.20)[#text(size:10pt)[J1141-6545]],
+
+    ..generate_mass_bands(),  // 添加观测质量约束带
     ..plots  // 使用展开语法
   )
 ]
@@ -137,7 +182,13 @@
     ylim: (-0.1, 2.5),
     xaxis:(subticks:1),
     yaxis:(subticks:3, ticks:range(0, 3, step:1)),
-    legend: (position: top + left),
+    legend: (position: bottom + right),
+    lq.place(13.5, 2.15)[#text(size:10pt)[J0348+0432]],
+    lq.place(13.5, 1.75)[#text(size:10pt)[J1903+0327]],
+    lq.place(13.5, 1.50)[#text(size:10pt)[B1913+16]],
+    lq.place(13.5, 1.20)[#text(size:10pt)[J1141-6545]],
+
+    ..generate_mass_bands(),  // 添加观测质量约束带
     ..plots  // 使用展开语法
   )
 ]

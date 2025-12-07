@@ -125,7 +125,12 @@ function main(;B_eff=10,alpha=1e-6)
     println("  能量密度: $(minimum(en_arr)) - $(maximum(en_arr)) MEV/fm³")
     println("  压强:     $(minimum(p_arr)) - $(maximum(p_arr)) MEV/fm³")
     out_file = "data/M_R_theta=pi.csv"
-   
+    rho_arr = df.rho  # 重子数密度 fm⁻³
+    # 创建能量密度 → 重子数密度的插值
+    sort_ind = sortperm(en_arr)
+    en_sorted = en_arr[sort_ind]
+    rho_sorted = rho_arr[sort_ind]
+    rho_baryon = Spline1D(en_sorted, rho_sorted, k=3)
 
     # 绘制 EOS（转回 MeV/fm³ 用于显示）
     p1 = plot(en_arr, 
@@ -170,6 +175,9 @@ function main(;B_eff=10,alpha=1e-6)
     # 求解 M-R 关系
     Rs = Float64[]
     Ms = Float64[]
+    Pcs = Float64[]  # 中心压强
+    rho_cs = Float64[]  # 中心密度
+    E_cs = Float64[]  # 中心能量密度
     
     println("\n求解 M-R 关系 (α = $alpha)...")
     for (i, ec) in enumerate(dens)
@@ -184,9 +192,17 @@ function main(;B_eff=10,alpha=1e-6)
             end
             push!(Rs, R)
             push!(Ms, M)
+                        # 保存中心物理量
+            Pc = press(ec)  # 中心压强 (geometric units)
+            push!(Pcs, Pc / to_geo)  # 转换为 MeV/fm³
 
+            push!(E_cs, ec / to_geo)  # 同上
             ec_MeV = ec / to_geo
             P = press(ec) / to_geo
+
+            rho_c = rho_baryon(ec_MeV)
+            push!(rho_cs, rho_c)
+
             println("[$i/$(length(dens))] ec = $(round(ec_MeV, sigdigits=6)) MeV/fm³  Pc = $(round(P, digits=6)) MeV/fm³, " *
                    "R = $(round(R, digits=6)) km, M = $(round(M, digits=6)) M_☉")
         catch e
@@ -204,7 +220,7 @@ function main(;B_eff=10,alpha=1e-6)
              legend=false
              )
     savefig(p2, "fig/M-R.svg")
-    df = DataFrame(R=Rs, M=Ms)
+    df = DataFrame(R=Rs, M=Ms, Pc=Pcs, Ec=E_cs, rhoc=rho_cs)
     CSV.write(out_file, df)
     # 找到最大质量
     if !isempty(Ms)
