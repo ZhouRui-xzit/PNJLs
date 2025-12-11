@@ -174,6 +174,7 @@ function get_nodes_sph(num, R ;modes="m")
 end
 
 
+
 function get_nodes_el(num, a, b, c; modes="m")
     if modes == "D"
         masses = alpha_D
@@ -201,13 +202,28 @@ function get_nodes_el(num, a, b, c; modes="m")
     
     # 使用字典来存储结果，便于按夸克类型和积分类型索引
     int_data = Dict()
+    eps = 1e-14
     
-    # 计算每种配置的节点和权重
     for (ir, upper, mass, key) in configs
-        p, w = gauleg(ir, upper, num)
-        # 计算有限体积修正
-        mre = w .* f_el.(p, mass, a, b, c)
-        int_data[key] = [p, mre]
+        if endswith(key, "_thermal")
+            # 在 x ∈ [0, 1 - eps] 上做高斯积分，换元 p = ir + (-log(1 - x))
+            x, w = gauleg(0.0, 1.0 - eps, num)
+            # 映射
+            p_trans = -log.(1 .- x)           # ∈ [0, ∞)
+            p = ir .+ p_trans                 # 实际动量从 IR 开始
+            # 可选截断（防止数值溢出）
+            #
+
+            # 雅可比 dp/dx = 1/(1-x)，完整权重乘以 jacobian
+            jacobian = 1.0 ./ (1.0 .- x)
+            mre = w .* jacobian .* f_el.(p, mass, a, b, c)
+            int_data[key] = [p, mre]
+        else
+            # 真空部分保持在 [ir, upper] 上常规 Gauss-Legendre
+            p, w = gauleg(ir, upper, num)
+            mre = w .* f_el.(p, mass, a, b, c)
+            int_data[key] = [p, mre]
+        end
     end
     
     # 也可以返回数组格式，保持与原函数兼容
@@ -267,7 +283,7 @@ function calculate_thermal_term(p, w, mass, T, mu, Phi1, Phi2)
     E_minus = E .- mu
     E_plus = E .+ mu
 
-    log_sum = log.(AA(E_minus, T, Phi1, Phi2)) .+ log.(AAbar(E_plus, T, Phi1, Phi2))
+    log_sum = NaNMath.log.(AA(E_minus, T, Phi1, Phi2)) .+ NaNMath.log.(AAbar(E_plus, T, Phi1, Phi2))
     integrand = w .* log_sum  # 积分测度包含于w中
     return T * sum(integrand)
 end
@@ -392,19 +408,16 @@ end
 function Quark_rho(x_array, T, rho_B,  gauss_nodes)
     T_out = promote_type(eltype(x_array), typeof(T), typeof(rho_B))
 
-    fvec = zeros(T_out, 8)
+    fvec = zeros(T_out, 6)
     X0 = x_array[1:5]
     phi = x_array[1:3]
     Phi1 = x_array[4]
     Phi2 = x_array[5]
 
-    mu_B = x_array[6] * 3
+    mu_B = x_array[6]
     fvec[1], fvec[2], fvec[3], fvec[4], fvec[5] = function_Quark_core(X0, T, mu_B, gauss_nodes)
     rho_now = -1 * dOmgea_dmu_B(phi, Phi1, Phi2, T, mu_B,  gauss_nodes)
-
-    fvec[6] = x_array[6] - x_array[7]
-    fvec[7] = x_array[7] - x_array[8]
-    fvec[8] = rho_now / rho0 - rho_B
+    fvec[6] = rho_now / rho0 - rho_B
     return fvec
 end
 

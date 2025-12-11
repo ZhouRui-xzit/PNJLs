@@ -196,14 +196,14 @@ function main_rep_mu(; T::Float64 = 100.0)
         (100.0, 0.7),
         (100.0, 1.0),
     ]
-""" 
-
-
+    """ 
 
     for (path, (R, e)) in zip(paths, Res)
         println("Processing firstline file: $path")
         calc_mu(T, path, R, e)
     end
+
+
 end
 
 function find_sol_0(T::Float64, R::Float64, e::Float64)

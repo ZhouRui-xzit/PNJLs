@@ -14,10 +14,9 @@ includet("pnjl_FV.jl")
 - 函数内部对 rho_range 顺序为从大到小扫描，并在末尾统一按 rho 升序排序。
 - mu 这里保存的是 X0[6]*hc（即 μ_B/3 的 MeV 值），保持与你原始脚本一致。
 """
-function check_s_shape(T, ints; rho_range=0.01:0.01:3.0)
-    # 初始猜测值（内部单位要求：X0[9:11] 为 μ_B/3 的 fm^-1）
-
-    X0 = [-1.8, -1.8, -2.2, 0.038, 0.038, 300/hc, 300/hc, 300/hc]
+function check_s_shape(T, ints; rho_range=3.00:-0.01:0.01)
+    
+    X0 = [-1.8, -1.8, -2.2, 0.038, 0.038, 1200/hc]
     mu_vals  = Float64[]
     rho_vals = Float64[]
 
@@ -31,7 +30,7 @@ function check_s_shape(T, ints; rho_range=0.01:0.01:3.0)
         catch e
             println("T=$(T) MeV, rho=$(rhoB) 计算失败: $e")
             # 失败时重置初值，避免错误扩散
-           X0 = [-1.8, -1.8, -2.2, 0.038, 0.038, 0.038, 300/hc, 300/hc, 300/hc]
+           X0 = [-1.8, -1.8, -2.2, 0.038, 0.038, 0.038, 1200/hc]
         end
     end
 
@@ -75,7 +74,7 @@ function coarse_scan(T_min, T_max, ints; step=1.0)
     end
     println("未找到存在 S 型曲线的温度区间")
     println("I'm going to lower T_min and try again.")
-    T_new_rang = T_min - 1:-step:10.0
+    T_new_rang = T_min - 1:-step:5.0
     for T in T_new_rang
         check = check_s_shape(T, ints)
         if !check.has_s_shape
@@ -107,8 +106,8 @@ function binary_search_CEP(T_lower, T_upper,ints; tolerance=0.01, rho_density=0.
     println("-----------------------------------------")
 
     # 边界验证：下边界必须有 S 型，上边界必须无 S 型
-    lower_result = check_s_shape(T_lower, ints; rho_range=0.01:0.01:3.0)
-    upper_result = check_s_shape(T_upper, ints; rho_range=0.01:0.01:3.0)
+    lower_result = check_s_shape(T_lower, ints; rho_range=3.00:-0.01:0.01)
+    upper_result = check_s_shape(T_upper, ints; rho_range=3.00:-0.01:0.01)
 
     if !lower_result.has_s_shape
         println("错误: 下边界温度 $(T_lower) MeV 不存在 S 型曲线")
@@ -125,7 +124,7 @@ function binary_search_CEP(T_lower, T_upper,ints; tolerance=0.01, rho_density=0.
         iter += 1
         T_mid = (T_lower + T_upper) / 2
 
-        result = check_s_shape(T_mid, ints; rho_range=0.01:0.01:3.0)
+        result = check_s_shape(T_mid, ints; rho_range=3.00:-0.01:0.01)
         push!(iter_results, (T=T_mid, has_s=result.has_s_shape, iter=iter))
 
         println("迭代 $iter: T = $(T_mid) MeV, S型: $(result.has_s_shape), 区间: [$(T_lower), $(T_upper)] MeV")
@@ -162,7 +161,7 @@ function find_T_CEP(; T_min=120.0, T_max=140.0,
 
     # 1) 粗略扫描（T 单位：MeV）
     a, b, c = paras #椭球参数
-    ints = get_nodes_el(500, a, b, c;modes="D")
+    ints = get_nodes_el(300, a, b, c;modes="D")
     println("=== 开始粗略扫描，步长: $(coarse_step) MeV, a,b,c=$(paras) ===")
     coarse_result = coarse_scan(T_min, T_max,  ints; step=coarse_step)
 
@@ -190,9 +189,10 @@ end
 - ARGS[2] = theta（弧度，可选，默认 0.0）
 - 结果写入 ../data/pure/CEP_result_theta.txt（追加），每次记录 theta 与 T_CEP
 """
-function main(;paras=paras, T_min=125.0, T_max=135.0)
+function main(R, e;T_min=125.0, T_max=135.0)
+    paras = parametrize_deformation(R, e;para=3.0,scale=-1.0)
     tolerance = length(ARGS) > 0 ? parse(Float64, ARGS[1]) : 0.01
-    #R = 30.0  # fm
+  
    
     println("====================================================")
     println(" 临界端点 (CEP) 精确搜索")
@@ -210,28 +210,31 @@ function main(;paras=paras, T_min=125.0, T_max=135.0)
         rho_density=0.005
     )
 
-    # 目录：../data/FV/
-    outdir  = joinpath(@__DIR__, "..", "..", "data", "FV")
-    mkpath(outdir)
-    outfile = joinpath(outdir, "CEP_result_ellipsoid.txt")
 
-    open(outfile, "a") do io
-        println(io, "==== CEP Search @ $(Dates.now()) ====")
-        println(io, "a,b,c=$(paras)")
-        println(io, "T_CEP(R) = $(result.T_CEP) ± $(result.precision/2) MeV")
-        println(io, "区间: [$(result.T_lower), $(result.T_upper)] MeV")
-        println(io, "迭代次数: $(result.iterations)")
-        println(io)  # 空行分隔
+    outpath = "../../data/FV/CEP_result_el.csv"
+    timestamp = string(Dates.now())  # 或 Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
+    df_new = DataFrame(R=R, e=e,
+                    a=paras[1], b=paras[2], c=paras[3],
+                    T_CEP=result.T_CEP, timestamp=timestamp)
+
+
+    if isfile(outpath)
+        df_old = CSV.read(outpath, DataFrame)
+        df_all = vcat(df_old, df_new)
+        CSV.write(outpath, df_all)
+    else
+        CSV.write(outpath, df_new)
     end
-
-    println("\n结果已追加保存至 $(outfile)")
+    println("结果已保存至 $outpath")
+    
+    return result
 end
 
-function start_el()
+function single_CEP()
     R = 100.0
     delta = 0.7
-    paras = parametrize_deformation(R, delta;para=3.0,scale=-1.0)
-    main(;paras=paras, T_min=80, T_max=130)
+    #paras = parametrize_deformation(R, delta;para=3.0,scale=-1.0)
+    main(R, delta;T_min=80, T_max=130)
 end
 
 
@@ -257,4 +260,54 @@ function parametrize_deformation(R, δ;para=2.0,scale=1.0)
     c = V / ((4/3)*π*a*b)
     
     return a, b, c
+end
+
+
+
+function unique_CEP()
+    """
+按 (R, e) 去重 CEP 结果文件 ../../data/FV/CEP_result_el.csv，保留最后一次出现的记录。
+    """
+    df = CSV.read("../../data/FV/CEP_result_el.csv", DataFrame)
+
+    # 若需按 (R,e) 去重并保留最后一次出现：
+    if nrow(df) > 0
+        # 反转表，使得 unique 保留原表中“最后出现”的那一行
+        df_rev = df[end:-1:1, :]
+        df_unique_rev = unique(df_rev, [:R, :e])   # unique 保留第一次（此处为原表的最后一次）
+        df = df_unique_rev[end:-1:1, :]
+    end
+    CSV.write("../../data/FV/CEP_result_el.csv", df)
+    println("已按 (R, e) 去重并保留最后一次出现的记录。")
+end
+
+function CEP_Rs()
+    Rs1 = 100.0:-5.0:35.0
+    Rs2 = 35.0:-1.0:15.0
+    Rs3 = 15.0:-0.1:14.0
+    Rs = unique(vcat(Rs1, Rs2, Rs3))
+    delta = 0.0
+    T_min=4.0
+    T_max=132.0
+    for R in Rs
+        res = main(R, delta;T_min=T_min, T_max=T_max)
+        T_max = res.T_CEP + 1.0
+        println("R=$R fm, T_CEP=$(res.T_CEP) MeV") 
+    end
+    unique_CEP()
+end
+
+function CEP_deltas()
+    #R = 30.0 # T=110 MeV
+    #R = 20 # T= 85.xxx MeV
+    R = 20.0
+    deltas = 0.0:0.02:1.0
+    T_min=4.0
+    T_max=90.0
+    for delta in deltas
+        res = main(R, delta;T_min=T_min, T_max=T_max)
+        T_max = res.T_CEP + 1.0
+        println("delta=$delta , T_CEP=$(res.T_CEP) MeV")
+    end
+    unique_CEP()
 end

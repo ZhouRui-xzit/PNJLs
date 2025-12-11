@@ -94,7 +94,7 @@ end
 function calculate_thermal_term(p, w, mass, T, mu, Phi1, Phi2)
     # p 是 [0,1] 区间的 Gauss 节点
     # w 只包含 1/(2π²)
-    p = clamp.(p, 0.0, 0.999)  # 截断到 [0, 0.999]
+    #p = clamp.(p, 0.0, 0.999)  # 截断到 [0, 0.999]
     # 指数变换: p_new = -log(1 - p)
     p_transformed = -log.(1.0 .- p)
     
