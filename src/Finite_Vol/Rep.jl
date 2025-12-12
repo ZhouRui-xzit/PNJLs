@@ -76,7 +76,9 @@ function Ther_Rep(X0, T, mu_B, ints, P0)
 
     P = SolveOmega(X0, T, mu_B, ints) - P0
     chi_T = DTOmega(X0, T, mu_B, ints)
+    S = chi_T
     chi_mu = DmuOmega(X0, T, mu_B, ints)
+    rho_B = chi_mu
     chi_mumu = Dmu2Omega(X0, T, mu_B, ints)
     chi_TT = DTTOmega(X0, T, mu_B, ints)
     chi_muT = DmuTOmega(X0, T, mu_B, ints)
@@ -88,8 +90,8 @@ function Ther_Rep(X0, T, mu_B, ints, P0)
     CV = T * (chi_TT - chi_muT^2 / chi_mumu)
     
 
-    CP = T * (chi_TT - 2*chi_T*chi_muT/chi_mu + (chi_T/chi_mu)^2 * chi_mumu)
-
+    #CP = T * (chi_TT - 2*chi_T*chi_muT/chi_mu + (chi_T/chi_mu)^2 * chi_mumu)
+    TA = E-3*P
 
 
     v_n_2 = (chi_T * chi_mumu - chi_mu * chi_muT) / (T * (chi_mumu * chi_TT - chi_muT^2)) # 等密声速平方
@@ -98,6 +100,6 @@ function Ther_Rep(X0, T, mu_B, ints, P0)
     v_2 = (v_n_2 * T * chi_T + v_s_2 * mu_B * chi_mu) / (P + E) # P+E = T*chi_T + mu_B*chi_mu
 
 
-    return [T*197.33, mu_B*197.33, P, E, CV, CP, v_2]
+    return [T*197.33, mu_B*197.33, P/T^4, E/T^4, TA/T^4, S/T^4, rho_B, CV, v_2]
 end
 

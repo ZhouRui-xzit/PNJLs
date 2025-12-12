@@ -6,14 +6,20 @@ using BenchmarkTools
 
 
 function main_Tmu()
-    Ts = 300:-1:100.0
-    mu_B = range(0.0, 290.0*3, length=60)
+    Ts = 200:-0.01:100.0
+    mu_B1 = range(0.0, 100.0*3, length=10)
+    mu_B2 = range(100.0*3, 280.0*3, length=20)
+    mu_B3 = range(280.0*3, 290.0*3, length=5)
+
+    mu_Bs = unique!(vcat(collect(mu_B1), collect(mu_B2), collect(mu_B3)))
+    mu_Bs = [291.0*3]
     ints = get_nodes(128;nodes2=128)
     X0 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # phi_u, phi_d, phi_s, Phi1, Phi2
-    lens = length(Ts) * length(mu_B)
+    lens = length(Ts) * length(mu_Bs)
     data = zeros(lens, 8)  # T, mu_B, phi_u, phi_d, phi_s, Phi1, Phi2
-    for (i, MU) in enumerate(mu_B)
+    for (i, MU) in enumerate(mu_Bs)
         println("mu_B = $MU MEV")
+        #if 
         X0 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # 重置初始猜测
         for (j, T) in enumerate(Ts)
             idx = (i-1)*length(Ts) + j
