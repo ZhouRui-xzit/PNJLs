@@ -60,8 +60,8 @@ function data_Gv(;theta=0.0)
     df = DataFrame(data, [:rho, :sigma_u, :sigma_d, :sigma_s, :eta_u, :eta_d, :eta_s, :Phi1, :Phi2, :rho_u, :rho_d, :rho_s, :mu_B, :mu_Q])
     df2 = DataFrame(EOS, [:rho, :P, :E])
     
-    outpath1 = "../../data/axion_red_vec/Rv=$(Rv)_theta=$theta.csv"
-    outpath2 = "../../data/axion_red_vec/EOS_Rv=$(Rv)_theta=$theta.csv"
+    outpath1 = "../../data/axion_red_vec/Rv=$(Rv)_theta=$(round(theta, digits=2)).csv"
+    outpath2 = "../../data/axion_red_vec/EOS_Rv=$(Rv)_theta=$(round(theta, digits=2)).csv"
     CSV.write(outpath1, df)
     CSV.write(outpath2, df2)
 

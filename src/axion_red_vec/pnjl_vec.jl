@@ -347,5 +347,8 @@ function get_EOS(NewX, T, theta, Gv, P0, ints)
     S = - dOmgea_dT(orders, mus, T, theta, rhos, Gv, ints)
     rho_mu_eff = rho_u * mu_u + rho_d * mu_d + rho_s * mu_s + rho_e * mu_e + rho_mu * mu_mu
     E = - P + T * S + rho_mu_eff
+
+
+    #v_n_2 = (chi_T * chi_mumu - chi_mu * chi_muT) / (T * (chi_mumu * chi_TT - chi_muT^2))
     return [P, E]
 end

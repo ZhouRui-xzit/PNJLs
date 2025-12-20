@@ -228,7 +228,7 @@ function QP_Trho()
     println("Time:", Dates.now())
     #R = 100.0
     #e = 1.0
-    path = "../../data/pure/T_rho_B_scan.csv"
+    path = "T_rho_CEP.csv"
     df = CSV.read(path, DataFrame)
     T = df.T
     mu = df.mu
@@ -278,7 +278,7 @@ function QP_Trho()
     )
     #outpath = "../../data/FV/Trho_MaxwellR=$R.dat"
 
-    outpath = "../../data/FV/Trho_Maxwell.csv"
+    outpath = "Trho_Maxwell_CEP.csv"
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")
 end
@@ -288,7 +288,7 @@ end
 function QP_Tmu()
     println("Time:", Dates.now())
 
-    path = "../../data/pure/T_mu_B_scan.dat"
+    path = "T_mu_B_scan.csv"
     df = CSV.read(path, DataFrame)
     T = df.T
     phi_u = df.phi_u
@@ -301,25 +301,24 @@ function QP_Tmu()
     for (i, mu_i) in enumerate(mu_B)
         println("mu_B = $mu_i")
         p = findall(df.mu_B .== mu_i)
-        find_T = find_Tmu(T[p], phi_u[p])
-        if isnan(find_T)
+        Tc, rhoc = find_cross_over(T[p], phi_u[p], rho[p])
+        if isnan(Tc)
             println("警告: 无法确定 T_c - 跳过 mu_B = $mu_i")
             continue
         end
-        T_c = find_T
+        
         data[i, 1] = mu_i
-        data[i, 2] = T_c
-
+        data[i, 2] = Tc
+        data[i, 3] = rhoc
         #data[i, :] .= (mu_i, T_c, rhoc)
     end
-    mask = data[:, 2] .> 131.03
-    data = data[mask, :]
+
     
 
-    df = DataFrame(mu_B = data[:, 1], T_c = data[:, 2])
+    df = DataFrame(mu_c = data[:, 1], T_c = data[:, 2], rhoc = data[:, 3])
 
 
-    outpath = "../../data/pure/Tmu_Tc.csv"
+    outpath = "Tmu_Tc.csv"
     CSV.write(outpath, df)
     println("结果已保存至 $outpath")
 end

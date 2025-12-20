@@ -190,17 +190,18 @@ function parametrize_deformation(R, δ;para=2.0,scale=1.0)
 end
 
 
-function main_muT(R, e, T_CEP)
+function main_muT(R, e, T_min, T_max)
     println("Time:", Dates.now())
 
-    mu_Bs = 0.0:10.0:1200.0
-    Ts = range(200.0, T_CEP+1, length=30)
+    mu_Bs = 0.0:3.0:1200.0
+    Ts = range(T_max, T_min, length=5)
 
 
     a, b, c = parametrize_deformation(R, e;para=3.0,scale=-1.0)
 
     ints = get_nodes_el(128, a, b, c, modes="D")
-    X00 = [-0.01, -0.01, -0.40, 0.8, 0.8]  # phi_u, phi_d, phi_s, Phi1, Phi2
+    X00 = [-1.4, -1.4, -1.96, 0.1, 0.1]  # phi_u, phi_d, phi_s, Phi1, Phi2
+    #1.4556982466004147,-1.4556982466004138,-1.958850804800871
     lens = length(Ts) * length(mu_Bs)
     data = zeros(lens, 7)  # T, mu_B, phi_u, phi_d, phi_s, Phi1, Phi2
     for (i, T) in enumerate(Ts)
@@ -217,5 +218,7 @@ function main_muT(R, e, T_CEP)
         end
     end
     df = DataFrame(data, [:T, :mu_B, :phi_u, :phi_d, :phi_s, :Phi1, :Phi2])
-    CSV.write("../../data/FV/T_mu_B_R=$(R)_e=$(e).csv", df)
+    CSV.write("../../data/FV/mu_B_T_R=$(R)_e=$(e).csv", df)
 end
+
+

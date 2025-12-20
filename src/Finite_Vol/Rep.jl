@@ -56,20 +56,6 @@ end
 
 
 
-# 涨落
-function Fluctuations(NewX, T, mu_B, eB, ints)
-
-    chi_mu = DmuOmega(NewX, T, mu_B, eB, ints)     # n = dP/dmu
-    chi2_mu2 = Dmu2Omega(NewX, T, mu_B, eB, ints) # d2P/dmu2
-    chi3_mu3 = Dmu3Omega(NewX, T, mu_B, eB, ints) # d3P/dmu3
-    chi4_mu4 = Dmu4Omega(NewX, T, mu_B, eB, ints) # d4P/dmu4
-
-    chi21 = chi2_mu2 / chi_mu
-    chi31 = chi3_mu3 / chi_mu
-    chi42 = chi4_mu4 / chi2_mu2
-
-    return [T*197.33, mu_B*197.33, chi21, chi31, chi42]
-end
 
 
 function Ther_Rep(X0, T, mu_B, ints, P0)
@@ -98,8 +84,95 @@ function Ther_Rep(X0, T, mu_B, ints, P0)
     v_s_2 = (chi_T * chi_muT - chi_mu * chi_TT) / (mu_B * (chi_muT^2 - chi_TT * chi_mumu)) # 等熵声速平方
     # 等 s/rho
     v_2 = (v_n_2 * T * chi_T + v_s_2 * mu_B * chi_mu) / (P + E) # P+E = T*chi_T + mu_B*chi_mu
+    
+    if !isfinite(v_2)
+        v_2 = 0.0
+    end
 
-
-    return [T*197.33, mu_B*197.33, P/T^4, E/T^4, TA/T^4, S/T^4, rho_B, CV, v_2]
+    #return [T*197.33, mu_B*197.33, P/T^4, E/T^4, TA/T^4, S/T^3, rho_B, CV/T^3, v_2]
+    return [T*197.33, mu_B*197.33, P*hc, E*hc, TA*hc, S, rho_B, CV, v_2]
 end
 
+
+
+
+
+
+function alpha_S(T, mu)
+    # 定义 Log 的参数 L，避免重复书写和计算，减少出错概率
+    # 公式中是对数内的项： (T/Lambda_T) * sqrt(1 + (mu/(pi*T))^2)
+    # 注意：T 和 mu 的单位必须与 Lambda_T 一致 (推荐都用 fm^-1)
+    
+    L_arg = (T / Lambda_T) * sqrt(1 + (mu / (pi * T))^2)
+    L = log(L_arg)
+    
+    # 按照公式 (54)
+    beta0 = 33 - 2 * Nf
+    beta1 = 6 * (153 - 19 * Nf) # 注意系数: 3 * (...) / (...)^2，这里为了清晰拆开写
+    
+    term1 = (6 * pi) / (beta0 * L)
+    
+    # 公式第二部分: 1 - ...
+    # 原公式中分子系数是 3*(153 - 19Nf)，分母是 (33 - 2Nf)^2
+    factor = (3 * (153 - 19 * Nf)) / (beta0^2)
+    
+    term2 = 1 - factor * (log(2 * L) / L)
+    
+    return term1 * term2
+end
+
+function tau(T, mu)
+    alphas = alpha_S(T, mu)
+    
+    # 按照公式 (53)
+    # 分母 = 5.1 * T * alpha^2 * log(1/alpha) * (1 + 0.12*(2Nf + 1))
+    denom = 5.1 * T * alphas^2 * log(1 / alphas) * (1 + 0.12 * (2 * Nf + 1))
+    
+    return 1 / denom
+end
+
+
+function quark_distribution(E, muq, T, Phi1, Phi2)
+    n_f1 = 1 + 3 * Phi1 * exp(-(E - muq) / T) + 3 * Phi2 * exp(-2 * (E - muq) / T) + exp(-3 * (E - muq) / T)
+    n_f2 = Phi1 * exp(-(E - muq) / T) + 2 * Phi2 * exp(-2 * (E - muq) / T) + exp(-3 * (E - muq) / T)
+    return n_f2 / n_f1
+end
+
+function antiquark_distribution(E, muq, T, Phi1, Phi2)
+    n_f1 = 1 + 3 * Phi2 * exp(-(E + muq) / T) + 3 * Phi1 * exp(-2 * (E + muq) / T) + exp(-3 * (E + muq) / T)
+    n_f2 = Phi2 * exp(-(E + muq) / T) + 2 * Phi1 * exp(-2 * (E + muq) / T) + exp(-3 * (E + muq) / T)
+    return n_f2 / n_f1
+end
+
+
+
+
+function trans_eff(X0, T, mu, ints)
+    phi = X0[1:3]
+    Phi1 = X0[4]
+    Phi2 = X0[5]
+    tau_val = tau(T, mu/3)
+    masses = Mass(phi)
+    eta = 0.0
+    muq = mu / 3.0
+    for flavor = 1:3
+
+        thermal_idx = 2*flavor       # 热节点索引：2,4,6
+        p_therm, w_therm = ints[thermal_idx] # 当前味道夸克的有限温度积分节点
+        # 计算能量（每个动量对应）
+        E = sqrt.(p_therm.^2 .+ masses[flavor]^2)
+        
+        # 夸克分布函数 f⁰(1-f⁰)
+        f_q = quark_distribution.(E, muq, T, Phi1, Phi2)
+        f_qbar = antiquark_distribution.(E, muq, T, Phi1, Phi2)
+        
+        f_factor = f_q .* (1 .- f_q) .+ f_qbar .* (1 .- f_qbar)
+        
+
+        integrand = p_therm.^4 ./ E.^2 .* f_factor .* w_therm  # 积分测度包含于w中
+        eta += sum(integrand)
+    end
+    eta *= 6*tau_val/(15*T)
+
+    return [T*197.33, mu*197.33, eta]
+end

@@ -1,6 +1,6 @@
 
 using Revise
-includet("Pnjl_pure.jl")
+includet("Pnjl_TT.jl")
 using Peaks
 using DataFrames, CSV
 using Dates  # 记录时间戳
@@ -13,7 +13,7 @@ using Dates  # 记录时间戳
 - 函数内部对 rho_range 顺序为从大到小扫描，并在末尾统一按 rho 升序排序。
 - mu 这里保存的是 X0[6]*hc（即 μ_B/3 的 MeV 值），保持与你原始脚本一致。
 """
-function check_s_shape(T,ints; rho_range=3.00:-0.01:0.01)
+function check_s_shape(T, q, ints; rho_range=3.00:-0.01:0.01)
     # 初始猜测值（内部单位要求：X0[6:8] 为 μ_B/3 的 fm^-1）
     X0 = [-1.8, -1.8, -2.2, 0.8, 0.8, 1000/hc]
 
@@ -23,7 +23,7 @@ function check_s_shape(T,ints; rho_range=3.00:-0.01:0.01)
     for rhoB in rho_range
         try
             # 关键改动：Trho 需要 fm^-1 的温度；外部传入的 T 为 MeV，这里做 T/hc
-            X0 = Trho(T/hc, rhoB, X0, ints)
+            X0 = Trho(T/hc, rhoB, X0, q, ints)
             # 记录 μ_q ≡ μ_B/3 的 MeV 值（与你原脚本一致）
             push!(mu_vals, X0[6] * hc)
             push!(rho_vals, rhoB)
@@ -54,7 +54,7 @@ end
 - T_min, T_max, step 统一以 MeV 给定
 - 内部调用 check_s_shape(T) 时会自动做 T/hc → fm^-1 的转换
 """
-function coarse_scan(T_min, T_max, ints; step=1.0)
+function coarse_scan(T_min, T_max, q, ints; step=1.0)
     results = Vector{NamedTuple{(:T,:has_s,:extrema),Tuple{Float64,Bool,Int}}}()
     T_range = T_max:-step:T_min
 
@@ -63,7 +63,7 @@ function coarse_scan(T_min, T_max, ints; step=1.0)
     println("------------------------------------------------")
 
     for T in T_range
-        result = check_s_shape(T,ints)
+        result = check_s_shape(T, q, ints)
         push!(results, (T=T, has_s=result.has_s_shape, extrema=result.extrema_count))
         println("T = $(T) MeV, S型: $(result.has_s_shape), 极值数: $(result.extrema_count)")
     end
@@ -89,7 +89,7 @@ end
 - tolerance 为最终区间宽度容差（单位 MeV）
 - rho_density 为 ρ 的采样密度（无量纲，相对 ρ0 的倍数时请相应调整）
 """
-function binary_search_CEP(T_lower, T_upper,ints; tolerance=0.01, rho_density=0.005)
+function binary_search_CEP(T_lower, T_upper, q, ints; tolerance=0.01, rho_density=0.005)
     @assert T_lower < T_upper "T_lower 必须小于 T_upper"
 
     iter_results = Vector{NamedTuple{(:T,:has_s,:iter),Tuple{Float64,Bool,Int}}}()
@@ -101,8 +101,8 @@ function binary_search_CEP(T_lower, T_upper,ints; tolerance=0.01, rho_density=0.
     println("------------------------------------------------")
 
     # 边界验证：下边界必须有 S 型，上边界必须无 S 型
-    lower_result = check_s_shape(T_lower, ints; rho_range=3.00:-rho_density:0.01)
-    upper_result = check_s_shape(T_upper, ints; rho_range=3.00:-rho_density:0.01)
+    lower_result = check_s_shape(T_lower, q, ints; rho_range=3.00:-rho_density:0.01)
+    upper_result = check_s_shape(T_upper, q, ints; rho_range=3.00:-rho_density:0.01)
 
     if !lower_result.has_s_shape
         println("错误: 下边界温度 $(T_lower) MeV 不存在 S 型曲线")
@@ -119,7 +119,7 @@ function binary_search_CEP(T_lower, T_upper,ints; tolerance=0.01, rho_density=0.
         iter += 1
         T_mid = (T_lower + T_upper) / 2
 
-        result = check_s_shape(T_mid, ints; rho_range=3.00:-rho_density:0.01)
+        result = check_s_shape(T_mid, q,     ints; rho_range=3.00:-rho_density:0.01)
         push!(iter_results, (T=T_mid, has_s=result.has_s_shape, iter=iter))
 
         println("迭代 $iter: T = $(T_mid) MeV, S型: $(result.has_s_shape), 区间: [$(T_lower), $(T_upper)] MeV")
@@ -147,14 +147,14 @@ end
 - fine_tolerance 为最终 T 区间宽度的目标精度（MeV）
 - rho_density 为 ρ 采样步长（与 rho_range 的定义保持一致）
 """
-function find_T_CEP(; T_min=120.0, T_max=140.0,
+function find_T_CEP(q; T_min=120.0, T_max=140.0,
                      coarse_step=1.0,
                      fine_tolerance=0.01,
                      rho_density=0.005)
-    ints = get_nodes(256, nodes2=256)
+    ints = get_nodes(300, nodes2=300)
     # 1) 粗略扫描（T 单位：MeV）
     println("=== 开始粗略扫描，步长: $(coarse_step) MeV ===")
-    coarse_result = coarse_scan(T_min, T_max, ints; step=coarse_step)
+    coarse_result = coarse_scan(T_min, T_max, q, ints; step=coarse_step)
 
     if isnan(coarse_result.T_lower)
         println(coarse_result.note)
@@ -164,7 +164,7 @@ function find_T_CEP(; T_min=120.0, T_max=140.0,
 
     # 2) 二分精确搜索（T 单位：MeV；内部调用会自动做 T/hc → fm^-1）
     println("\n=== 开始精确搜索，目标精度: ±$(fine_tolerance/2) MeV ===")
-    fine_result = binary_search_CEP(coarse_result.T_lower, coarse_result.T_upper, ints,
+    fine_result = binary_search_CEP(coarse_result.T_lower, coarse_result.T_upper, q, ints,
                                     tolerance=fine_tolerance, rho_density=rho_density)
 
     println("\n最终结果:")
@@ -179,7 +179,7 @@ end
 - 默认从 ARGS 读取精度（单位 MeV），否则使用 0.01 MeV
 - 结果写入 ../data/CEP_result.txt
 """
-function main()
+function main(;q=1.001)
     tolerance = length(ARGS) > 0 ? parse(Float64, ARGS[1]) : 1e-4
 
     println("====================================================")
@@ -188,30 +188,38 @@ function main()
     println(" 单位约定: 扫描温度使用 MeV；Trho 调用内部自动做 T/hc → fm^-1。")
     println("====================================================")
 
-    result = find_T_CEP(
-        T_min=131.0,    # MeV
-        T_max=132.0,    # MeV
+    result = find_T_CEP(q;
+        T_min=50.0,    # MeV
+        T_max=120.0,    # MeV
         coarse_step=1.0,          # MeV
         fine_tolerance=tolerance, # MeV
-        rho_density=0.01
+        rho_density=0.005
     )
 
-    # 以“追加”方式保存，避免覆盖；并确保目录存在
-    outdir = joinpath(@__DIR__, "..", "data")
-    mkpath(outdir)
-    outfile = joinpath(outdir, "../../data/pure/CEP_result.txt")
-    open(outfile, "a") do io
-        println(io, "==== CEP Search @ $(Dates.now()) ====")
-        println(io, "T_CEP = $(result.T_CEP) ± $(result.precision/2) MeV")
-        println(io, "区间: [$(result.T_lower), $(result.T_upper)] MeV")
-        println(io, "迭代次数: $(result.iterations)")
-        println(io)  # 空行分隔多次结果
-    end
+    outpath = "../../data/TT/CEP_result_el.csv"
+    timestamp = string(Dates.now())  # 或 Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
+    df_new = DataFrame(q=q,
+                    T_CEP=result.T_CEP, 
+                    T_upper=result.T_upper,
+                    timestamp=timestamp)
 
-    println("\n结果已追加保存至 $(outfile)")
+
+    if isfile(outpath)
+        df_old = CSV.read(outpath, DataFrame)
+        df_all = vcat(df_old, df_new)
+        CSV.write(outpath, df_all)
+    else
+        CSV.write(outpath, df_new)
+    end
+    println("结果已保存至 $outpath")
+
+
 end
 
-# 作为脚本执行
-if abspath(PROGRAM_FILE) == @__FILE__
-    main()
+
+function qs()
+    qqs = [1.000001]
+    for q in qqs
+        main(q=q)
+    end
 end

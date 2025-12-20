@@ -66,9 +66,11 @@ function calc_T(mu_B::Float64, firstline_path::String, R::Float64, e::Float64)
     """
     固定 mu_B,扫描温度 T
     """
-    Ts = 50.0:2.0:300.0   # 单位:MeV
+    Ts = 1.0:2.0:600.0   # 单位:MeV
+   # Ts2 = 0.1:0.2:1.0
+    #Ts = unique(vcat(collect(Ts2), collect(Ts)))
     a, b, c = parametrize_deformation(R, e; para=3.0, scale=-1.0)
-    ints = get_nodes_el(200, a, b, c, modes="D")
+    ints = get_nodes_el(300, a, b, c, modes="D")
 
     # 两套典型初值
     X_CONF   = [-1.9, -1.9, -2.2, 0.0038, 0.0038]
@@ -91,9 +93,9 @@ function calc_T(mu_B::Float64, firstline_path::String, R::Float64, e::Float64)
 
     # 参考压强
     X00 = [-1.8, -1.8, -2.2, 0.01, 0.01]
-    X00 = Tmu(10.0/hc, 0.0/hc, X00, ints)
+    X00 = Tmu(0.1/hc, 0.0/hc, X00, ints)
     phi = X00[1:3]; Phi1 = X00[4]; Phi2 = X00[5]
-    P0 = -Omega(phi, Phi1, Phi2, 50.0/hc, 0.0/hc, ints)
+    P0 = -Omega(phi, Phi1, Phi2, 0.1/hc, 0.0/hc, ints)
     println("Reference pressure P0 = $P0 MeV/fm^3")
     # 判断起始相态
     T_start = Ts[1]
