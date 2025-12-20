@@ -95,7 +95,11 @@ function solve_TOV(c_dens, en_dens, press; rmax=20, rtol=1e-5, dr=0.05, alpha=6.
     cb = ContinuousCallback(condition, affect!)
    
     #prob = ODEProblem(tov_eq!, [P0, m0], r_span, (en_dens, press)) # for Einstein TOV
-    prob = ODEProblem(EGB_tov_eq!, [P0, m0], r_span, (en_dens, press, alpha))
+    if alpha==0.00
+        prob = ODEProblem(tov_eq!, [P0, m0], r_span, (en_dens, press)) # for Einstein TOV
+    else
+        prob = ODEProblem(EGB_tov_eq!, [P0, m0], r_span, (en_dens, press, alpha))
+    end
 
     sol = solve(prob, Tsit5(),
                reltol=rtol,
@@ -110,13 +114,29 @@ function solve_TOV(c_dens, en_dens, press; rmax=20, rtol=1e-5, dr=0.05, alpha=6.
     return R, M, sol
 end
 
-function main(;B_eff=10,alpha=1e-6)
+# 红移
+function RGB_red_shift(R, M, alpha)
+    term1 = sqrt(1 + R^2/(2*alpha) * (1 - sqrt(1 + 8*alpha*M/R^3)))
+    return 1 / term1 - 1
+end
+
+# 红移
+function red_shift(R, M, alpha)
+    if alpha == 0.00
+        return 1 / sqrt(1 - 2 * M / R) - 1
+    else
+        return RGB_red_shift(R, M, alpha)
+    end
+end
+
+
+function main(;theta=0.00,B_eff=10,alpha=1e-6)
     #B_eff = 70  # 有效袋常数 MeV/fm³ for energy density shift
     #alpha = 1 # EGB 修正参数
     # some alpha : 0.0 1-6   
     # 加载 EOS 数据（单位：MeV/fm³）
     #theta = 0.0
-    df = CSV.read("EOS_Rv=0.5_theta=3.141592653.csv", DataFrame)
+    df = CSV.read("EOS_Rv=0.5_theta=$(theta).csv", DataFrame)
 
     en_arr = df.E .+ B_eff  
     p_arr = df.P .- B_eff
@@ -124,7 +144,7 @@ function main(;B_eff=10,alpha=1e-6)
     println("EOS 范围:")
     println("  能量密度: $(minimum(en_arr)) - $(maximum(en_arr)) MEV/fm³")
     println("  压强:     $(minimum(p_arr)) - $(maximum(p_arr)) MEV/fm³")
-    out_file = "data/M_R_theta=pi.csv"
+    out_file = "data/M_R_theta=$(theta)_alpha=$(alpha)_Beff=$(B_eff).csv"
     rho_arr = df.rho  # 重子数密度 fm⁻³
     # 创建能量密度 → 重子数密度的插值
     sort_ind = sortperm(en_arr)
@@ -175,7 +195,9 @@ function main(;B_eff=10,alpha=1e-6)
     # 求解 M-R 关系
     Rs = Float64[]
     Ms = Float64[]
+    Zss = Float64[]  # 红移
     Pcs = Float64[]  # 中心压强
+    Cs = Float64[]  # 紧致度
     rho_cs = Float64[]  # 中心密度
     E_cs = Float64[]  # 中心能量密度
     
@@ -192,7 +214,9 @@ function main(;B_eff=10,alpha=1e-6)
             end
             push!(Rs, R)
             push!(Ms, M)
-                        # 保存中心物理量
+             # 保存中心物理量
+            Zs = red_shift(R, M*mass_sun, alpha) # 质量-> km-2
+            C = (M * mass_sun) / R
             Pc = press(ec)  # 中心压强 (geometric units)
             push!(Pcs, Pc / to_geo)  # 转换为 MeV/fm³
 
@@ -202,7 +226,8 @@ function main(;B_eff=10,alpha=1e-6)
 
             rho_c = rho_baryon(ec_MeV)
             push!(rho_cs, rho_c)
-
+            push!(Zss, Zs)
+            push!(Cs, C)
             println("[$i/$(length(dens))] ec = $(round(ec_MeV, sigdigits=6)) MeV/fm³  Pc = $(round(P, digits=6)) MeV/fm³, " *
                    "R = $(round(R, digits=6)) km, M = $(round(M, digits=6)) M_☉")
         catch e
@@ -220,17 +245,32 @@ function main(;B_eff=10,alpha=1e-6)
              legend=false
              )
     savefig(p2, "fig/M-R.svg")
-    df = DataFrame(R=Rs, M=Ms, Pc=Pcs, Ec=E_cs, rhoc=rho_cs)
+    df = DataFrame(R=Rs, M=Ms, Z=Zss, C=Cs, Pc=Pcs, Ec=E_cs, rhoc=rho_cs)
     CSV.write(out_file, df)
     # 找到最大质量
     if !isempty(Ms)
         max_M = maximum(Ms)
         max_idx = argmax(Ms)
         max_R = Rs[max_idx]
-        println("\n最大质量星:")
-        println("  M_max = $(round(max_M, digits=3)) M_☉")
-        println("  R_max = $(round(max_R, digits=2)) km")
+        max_ec = E_cs[max_idx]
+        max_pc = Pcs[max_idx]
+        max_rhoc = rho_cs[max_idx]
+        max_Z = Zss[max_idx]
+        max_C = Cs[max_idx]
+        println("\n最大质量配置:")
+        println("  M_max = $(round(max_M, digits=6)) M_☉")
+        println("  R = $(round(max_R, digits=6)) km")
+        println("  ρ_c = $(round(max_rhoc, sigdigits=6)) MeV/fm³")
+        println("  E_c = $(round(max_ec, sigdigits=6)) MeV/fm³")
+        println("  P_c = $(round(max_pc, sigdigits=6)) MeV/fm³")
+        println("  Z = $(round(max_Z, digits=6))")
+        println("  C = $(round(max_C, digits=6))")
+    else
+        println("未能计算出任何稳定配置。")
     end
-    println("M-R has been saved to fig/M-R.svg")
+
+
+
+
 end
 
