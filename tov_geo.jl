@@ -228,8 +228,8 @@ function main(;theta=0.00,B_eff=10,alpha=1e-6)
             push!(rho_cs, rho_c)
             push!(Zss, Zs)
             push!(Cs, C)
-            println("[$i/$(length(dens))] ec = $(round(ec_MeV, sigdigits=6)) MeV/fm³  Pc = $(round(P, digits=6)) MeV/fm³, " *
-                   "R = $(round(R, digits=6)) km, M = $(round(M, digits=6)) M_☉")
+           # println("[$i/$(length(dens))] ec = $(round(ec_MeV, sigdigits=6)) MeV/fm³  Pc = $(round(P, digits=6)) MeV/fm³, " *
+           #        "R = $(round(R, digits=6)) km, M = $(round(M, digits=6)) M_☉")
         catch e
             ec_MeV = ec / to_geo
             @warn "求解失败 at ρc = $(round(ec_MeV, sigdigits=4)) MeV/fm³: $e"
@@ -269,7 +269,8 @@ function main(;theta=0.00,B_eff=10,alpha=1e-6)
         println("未能计算出任何稳定配置。")
     end
 
-
+    df = DataFrame(max_M=max_M,max_R=max_R,max_ec=max_ex,max_pc=max_pc,max_Z=max_Z,max_C=max_C)
+    
 
 
 end
