@@ -76,30 +76,7 @@ function Find_IR_sph(R, masses)
     return IR
 end
 
-function old_Find_IR_el(a, b, c, masses; modes="D")
-    IR = zeros(3)
-    for flavor = 1:3
-        mass = masses[flavor]
-        fWrapper(X) = [f_el(X[1], mass, a, b, c)]  # 保证返回向量
-        if modes == "D"
-            IR0 = [0.6] # 圆解
-        elseif modes == "N"
-            IR0 = [1 / (sqrt(2)* c)] 
-        else # Dr
-            IR0 = [0.6]
-        end
-        res = nlsolve(fWrapper, IR0, 
-             method=:newton,  # 或 :newton, :anderson
-             autodiff=:forward,
-             ftol=1e-10,
-             xtol=1e-10,
-             iterations=5000)
-        println("a,b,c=", a, ",", b, ",", c)
-        println("res:", res.f_converged,res.x_converged, " IR=", res.zero[1])
-        IR[flavor] = res.zero[1]
-    end
-    return IR
-end
+
 
 function Find_IR_el(a, b, c; modes="D")
     if modes == "D"
@@ -238,6 +215,56 @@ function get_nodes_el(num, a, b, c; modes="m")
     ]
 end
 
+
+function get_nodes_el_hard(num, a, b, c; modes="m")
+    if modes == "D"
+        masses = alpha_D
+    elseif modes == "N"
+        masses = alpha_N
+    elseif modes == "Dr"
+        masses = alpha_Dr
+    else
+        masses = m0
+    end
+    IR = Find_IR_el(a, b, c;modes=modes)  # 三种夸克的IR截断
+    IR_u, IR_d, IR_s = IR, IR, IR
+    # 定义参数组合：每个夸克两种不同的节点配置
+    configs = [
+        # 真空积分节点 (从IR到Lambda_f)
+        (IR_u, Lambda_f, masses[1], "u_vacuum"),  # u夸克真空
+        (IR_d, Lambda_f, masses[2], "d_vacuum"),  # d夸克真空
+        (IR_s, Lambda_f, masses[3], "s_vacuum"),  # s夸克真空
+
+        # 有限温度积分节点 (从IR到20.0)
+        (IR_u, 50.0, masses[1], "u_thermal"),     # u夸克有限温度
+        (IR_d, 50.0, masses[2], "d_thermal"),     # d夸克有限温度
+        (IR_s, 50.0, masses[3], "s_thermal")      # s夸克有限温度
+    ]
+    
+    # 使用字典来存储结果，便于按夸克类型和积分类型索引
+    int_data = Dict()
+    eps = 1e-14
+    
+    for (ir, upper, mass, key) in configs
+
+        # 真空部分保持在 [ir, upper] 上常规 Gauss-Legendre
+        p, w = gauleg(ir, upper, num)
+        mre = w .* f_el.(p, mass, a, b, c)
+        int_data[key] = [p, mre]
+
+    end
+    
+    # 也可以返回数组格式，保持与原函数兼容
+    # 按u_vacuum, u_thermal, d_vacuum, d_thermal, s_vacuum, s_thermal顺序
+    return [
+        int_data["u_vacuum"], 
+        int_data["u_thermal"],
+        int_data["d_vacuum"], 
+        int_data["d_thermal"],
+        int_data["s_vacuum"], 
+        int_data["s_thermal"]
+    ]
+end
 
 
 

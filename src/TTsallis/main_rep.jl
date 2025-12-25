@@ -21,7 +21,7 @@ function main_rep_T(; mu_B::Float64 = 0.0)
 
     ]
     Res = [
-        1.0001, 
+        1.001, 
         1.05, 
         1.10
     ]
@@ -47,7 +47,7 @@ function calc_T(mu_B::Float64, firstline_path::String, q::Float64)
     Ts = 50.0:2.0:500.0   # 单位:MeV
    # Ts2 = 0.1:0.2:1.0
     #Ts = unique(vcat(collect(Ts2), collect(Ts)))
-    ints = get_nodes(10; nodes2=64)
+    ints = get_nodes(128; nodes2=300,modes="high")
 
     # 两套典型初值
     X_CONF   = [-1.9, -1.9, -2.2, 0.0038, 0.0038]

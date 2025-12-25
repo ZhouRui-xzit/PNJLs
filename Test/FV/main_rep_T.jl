@@ -66,11 +66,11 @@ function calc_T(mu_B::Float64, firstline_path::String, R::Float64, e::Float64)
     """
     固定 mu_B,扫描温度 T
     """
-    Ts = 1.0:2.0:600.0   # 单位:MeV
+    Ts = 50.0:2.0:300.0
    # Ts2 = 0.1:0.2:1.0
     #Ts = unique(vcat(collect(Ts2), collect(Ts)))
     a, b, c = parametrize_deformation(R, e; para=3.0, scale=-1.0)
-    ints = get_nodes_el(300, a, b, c, modes="D")
+    ints = get_nodes_el_hard(128, a, b, c, modes="D")
 
     # 两套典型初值
     X_CONF   = [-1.9, -1.9, -2.2, 0.0038, 0.0038]
@@ -109,6 +109,9 @@ function calc_T(mu_B::Float64, firstline_path::String, R::Float64, e::Float64)
     Sa = Float64[]; rhoa = Float64[]; cs2a = Float64[]; CVa = Float64[];
     Sb = Float64[]; rhob = Float64[]; cs2b = Float64[]; CVb = Float64[];
 
+    # 输运系数
+    eta_sb = Float64[]; sigma_Tb = Float64[];
+    eta_sa = Float64[]; sigma_Ta = Float64[];
     crossed = false
 
     for T in Ts
@@ -125,16 +128,19 @@ function calc_T(mu_B::Float64, firstline_path::String, R::Float64, e::Float64)
         NewX = Tmu(T/hc, mu_B/hc, X0, ints)
         vals = Ther_Rep(NewX * 1.0001, T/hc, mu_B/hc, ints, P0)
         P, E, TA, S, rhoB, Cv, cs2 = vals[3], vals[4], vals[5], vals[6], vals[7], vals[8], vals[9]
-
+        trans = trans_eff(X0, T/hc, mu_B/hc, ints)
+        s = DTOmega(X0*1.001, T/hc, mu_B/hc, ints)
+        eta_s = trans[3]/s 
+        sigma_T = trans[4]
         # 存储数据
         if !crossed
             push!(Tb, T); push!(mub, mu_B); push!(Pb, P); push!(Eb, E); push!(TAb, TA);
             push!(Sb, S); push!(rhob, rhoB); push!(cs2b, cs2)
-            push!(CVb, Cv)
+            push!(CVb, Cv); push!(eta_sb, eta_s); push!(sigma_Tb, sigma_T)
         else
             push!(Ta, T); push!(mua, mu_B); push!(Pa, P); push!(Ea, E); push!(TAa, TA);
             push!(Sa, S); push!(rhoa, rhoB); push!(cs2a, cs2)
-            push!(CVa, Cv)
+            push!(CVa, Cv); push!(eta_sa, eta_s); push!(sigma_Ta, sigma_T)
         end
 
         X0 .= NewX
@@ -142,13 +148,13 @@ function calc_T(mu_B::Float64, firstline_path::String, R::Float64, e::Float64)
 
     # 写文件
     if crossed
-        df_before = DataFrame(T=Tb, mu_B=mub, P=Pb, E=Eb, TA=TAb, S=Sb, rhoB=rhob, cs2=cs2b, CV=CVb)
-        df_after  = DataFrame(T=Ta, mu_B=mua, P=Pa, E=Ea, TA=TAa, S=Sa, rhoB=rhoa, cs2=cs2a, CV=CVa)
+        df_before = DataFrame(T=Tb, mu_B=mub, P=Pb, E=Eb, TA=TAb, S=Sb, rhoB=rhob, cs2=cs2b, CV=CVb, eta_s=eta_sb, sigma_T=sigma_Tb)
+        df_after  = DataFrame(T=Ta, mu_B=mua, P=Pa, E=Ea, TA=TAa, S=Sa, rhoB=rhoa, cs2=cs2a, CV=CVa, eta_s=eta_sa, sigma_T=sigma_Ta)
         CSV.write("../../data/FV/cs/rep_muB=$(round(mu_B,digits=3))_R=$(R)_e=$(e)_before.csv", df_before)
         CSV.write("../../data/FV/cs/rep_muB=$(round(mu_B,digits=3))_R=$(R)_e=$(e)_after.csv",  df_after)
         println("Saved two files: before & after crossing.")
     else
-        df_all = DataFrame(T=Tb, mu_B=mub, P=Pb, E=Eb, TA=TAb, S=Sb, rhoB=rhob, cs2=cs2b, CV=CVb)
+        df_all = DataFrame(T=Tb, mu_B=mub, P=Pb, E=Eb, TA=TAb, S=Sb, rhoB=rhob, cs2=cs2b, CV=CVb, eta_s=eta_sb, sigma_T=sigma_Tb)
         CSV.write("../../data/FV/cs/rep_muB=$(round(mu_B,digits=3))_R=$(R)_e=$(e)_all.csv", df_all)
         println("No crossing found, saved single file.")
     end

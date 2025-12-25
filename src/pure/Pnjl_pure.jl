@@ -17,47 +17,6 @@ end
 
 # ==================== 节点缓存工具 ====================
 
-const GAUSS_CACHE = Dict{Int, Tuple{Vector{Float64}, Vector{Float64}}}()
-const UNIT_NODE_CACHE = Dict{Tuple{Int, Float64}, Tuple{Vector{Float64}, Vector{Float64}}}()
-const SYM_NODE_CACHE = Dict{Tuple{Int, Float64}, Tuple{Vector{Float64}, Vector{Float64}}}()
-const FOCUS_SPLIT_CACHE = Dict{Int, Tuple{Vector{Float64}, Vector{Float64}, Vector{Float64}, Vector{Float64}}}()
-
-function get_legendre_nodes(n_nodes::Int)
-    @assert n_nodes > 0 "Gauss-Legendre 节点数必须为正"
-    return get!(GAUSS_CACHE, n_nodes) do
-        gausslegendre(n_nodes)
-    end
-end
-
-function get_unit_nodes(n_nodes::Int; clamp_high::Float64=1.0 - 1e-12)
-    key = (n_nodes, clamp_high)
-    return get!(UNIT_NODE_CACHE, key) do
-        xi, w = get_legendre_nodes(n_nodes)
-        u = clamp.((xi .+ 1.0) ./ 2.0, 0.0, clamp_high)
-        w_half = w ./ 2.0
-        (u, w_half)
-    end
-end
-
-function get_symmetric_nodes(n_nodes::Int; clamp_high::Float64=1.0 - 1e-10)
-    key = (n_nodes, clamp_high)
-    return get!(SYM_NODE_CACHE, key) do
-        t, w = get_legendre_nodes(n_nodes)
-        mask = t .< clamp_high
-        (t[mask], w[mask])
-    end
-end
-
-function get_focus_unit_nodes(n_nodes::Int)
-    return get!(FOCUS_SPLIT_CACHE, n_nodes) do
-        n_low = max(2, Int(round(0.4 * n_nodes)))
-        n_high = max(2, n_nodes - n_low)
-        u_low, w_low = n_low > 0 ? get_unit_nodes(n_low) : (Float64[], Float64[])
-        v_high, w_high = n_high > 0 ? get_unit_nodes(n_high) : (Float64[], Float64[])
-        (u_low, w_low, v_high, w_high)
-    end
-end
-
 
 
 function get_nodes(p_num; nodes2=100)
@@ -146,60 +105,6 @@ function calculate_vacuum_term(p, w, mass)
     return sum(integrand)
 end
 
-# ==================== 双区聚焦方法 ====================
-
-
-function thermal_linear_transform(n_nodes, mass, T, mu, Phi1, Phi2; scale=mass)
-    t, w = get_symmetric_nodes(n_nodes)
-    p_transformed = scale .* (1 .+ t) ./ (1 .- t)
-    jacobian = 2 .* scale ./ (1 .- t).^2
-    weights = w .* jacobian .* p_transformed.^2 ./ (2*pi^2)
-    E = sqrt.(p_transformed.^2 .+ mass^2)
-    log_sum = log.(AA(E .- mu, T, Phi1, Phi2)) .+ log.(AAbar(E .+ mu, T, Phi1, Phi2))
-    return T * sum(weights .* log_sum)
-end
-
-
-function _integrand_with_weights(p_vals, weights, mass, T, mu, Phi1, Phi2)
-    if isempty(p_vals)
-        return 0.0
-    end
-    E = sqrt.(p_vals.^2 .+ mass^2)
-    log_sum = log.(AA(E .- mu, T, Phi1, Phi2)) .+ log.(AAbar(E .+ mu, T, Phi1, Phi2))
-    return T * sum(weights .* log_sum)
-end
-
-# 双区聚焦映射原理：在 [0,1) 上预留 40% 节点映射到 [0,pF) 并以幂律拉伸靠近 pF，
-# 其余节点通过 Möbius 变换 v/(1-v) + pF 覆盖 [pF, ∞)，β = max(Δ/hc, 5T, 0.5) 控制外部尺度。
-# 详细推导见 integral_test/focus_transform_notes.md。
-function thermal_focus_transform(n_nodes, mass, T, mu, Phi1, Phi2; delta_mev=50.0, power=3)
-    pF2 = max(mu^2 - mass^2, 0.0)
-    if pF2 <= 0
-        return thermal_linear_transform(n_nodes, mass, T, mu, Phi1, Phi2; scale=mass)
-    end
-    pF = sqrt(pF2)
-    beta = max(delta_mev / hc, 5.0 * T, 0.5)
-    u_low, w_low, v_high, w_high = get_focus_unit_nodes(n_nodes)
-    total = 0.0
-
-    if !isempty(u_low)
-        one_minus_u = 1 .- u_low
-        p_low = pF .* (1 .- one_minus_u.^power)
-        jac_low = pF .* power .* one_minus_u.^(power - 1)
-        weights_low = w_low .* jac_low .* p_low.^2 ./ (2*pi^2)
-        total += _integrand_with_weights(p_low, weights_low, mass, T, mu, Phi1, Phi2)
-    end
-
-    if !isempty(v_high)
-        denom = 1 .- v_high
-        p_high = pF .+ beta .* v_high ./ denom
-        jac_high = beta ./ denom.^2
-        weights_high = w_high .* jac_high .* p_high.^2 ./ (2*pi^2)
-        total += _integrand_with_weights(p_high, weights_high, mass, T, mu, Phi1, Phi2)
-    end
-
-    return total
-end
 
 
 function calculate_thermal_term(p, w, mass, T, mu, Phi1, Phi2)

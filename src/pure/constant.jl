@@ -45,4 +45,4 @@ a2 = 15.2
 b3 = -1.75
 b4=7.555
 
-Lambda_T = 70 / hc
+const Lambda_T = 70 / hc

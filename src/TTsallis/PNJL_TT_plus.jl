@@ -16,6 +16,22 @@ function gauleg(a, b, n)
     return x_mapped, w_mapped
 end
 
+
+function get_nodes_hard(nodes1, nodes2;IR=50.0)
+    # 真空项积分节点 [0, Lambda_f]
+    p1, w1 = gauleg(0.0, Lambda_f, nodes1)
+    w1 = w1 .* p1.^2 ./ (2*pi^2)
+
+    p2, w2 = gauleg(0.0, IR, nodes2)  # 热力学部分使用 [0,IR] 区间的节点
+    w2 = w2 .* p2.^2 ./ (2*pi^2)
+
+    int1 = (p1, w1)
+    int2 = (p2, w2)
+
+    return int1, int2
+end
+
+
 function get_nodes(p_num; nodes2=100,modes="high")
     # 真空项积分节点 [0, Lambda_f]
     p1, w1 = gauleg(0.0, Lambda_f, p_num)
@@ -32,13 +48,12 @@ function get_nodes(p_num; nodes2=100,modes="high")
    
     elseif modes== "low"
         # 
-        x, wx = gauleg(0.0, 1.0 , nodes2)
+            x, wx = gauleg(0.0, 1.0 , nodes2)
             # 映射
-        u = -log.(1 .- x)           # ∈ [0, ∞)
+            u = -log.(1 .- x)           # ∈ [0, ∞)
             # 雅可比 dp/dx = 1/(1-x)，完整权重乘以 jacobian
-        jacobian = 1.0 ./ (1.0 .- x)
-        wu = wx .* jacobian .* u.^2 ./ (2π^2)
-   
+            jacobian = 1.0 ./ (1.0 .- x)
+            wu = wx .* jacobian .* u.^2 ./ (2π^2)
     end
     
     int1 = (p1, w1)
@@ -141,18 +156,18 @@ end
 
 
 
-function calculate_thermal_term(p, w, mass, T, mu, Phi1, Phi2, q)
+function calculate_thermal_term(u, w, mass, T, mu, Phi1, Phi2, q)
 
     # 计算能量
-    E = sqrt.(p.^2 .+ (mass)^2)
-    E_minus = (E .- mu) ./ T
-    E_plus = (E .+ mu) ./ T
+    E = sqrt.(u.^2 .+ (mass/T)^2)
+    E_minus = E .- mu/T
+    E_plus = E .+ mu/T
 
     # 计算被积函数
     log_sum = log_q.(AA.(E_minus, Phi1, Phi2,q), q) .+ log_q.(AAbar.(E_plus, Phi1, Phi2,q), q)
     integrand = w .* log_sum
     
-    return T * sum(integrand)
+    return T^4 * sum(integrand)
 end
 
 
@@ -248,8 +263,6 @@ end
 function Trho(T, rho_B, X0, q, ints)
     # 给定 T, rho_B 求解 8 维驻点
     fWrapper(Xs) = Quark_rho(Xs, T, rho_B, q, ints)
-    res = nlsolve(fWrapper, X0, autodiff=:forward, method=:newton,
-                    ftol=1e-8, xtol=1e-8, iterations=500
-    )
+    res = nlsolve(fWrapper, X0)
     return res.zero
 end

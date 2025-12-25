@@ -151,7 +151,10 @@ function find_T_CEP(q; T_min=120.0, T_max=140.0,
                      coarse_step=1.0,
                      fine_tolerance=0.01,
                      rho_density=0.005)
-    ints = get_nodes(300, nodes2=300)
+
+                     
+    ints = get_nodes(128; nodes2=300,modes="high")
+    
     # 1) 粗略扫描（T 单位：MeV）
     println("=== 开始粗略扫描，步长: $(coarse_step) MeV ===")
     coarse_result = coarse_scan(T_min, T_max, q, ints; step=coarse_step)
@@ -189,8 +192,8 @@ function main(;q=1.001)
     println("====================================================")
 
     result = find_T_CEP(q;
-        T_min=50.0,    # MeV
-        T_max=120.0,    # MeV
+        T_min=130.0,    # MeV
+        T_max=132.0,    # MeV
         coarse_step=1.0,          # MeV
         fine_tolerance=tolerance, # MeV
         rho_density=0.005
@@ -218,7 +221,7 @@ end
 
 
 function qs()
-    qqs = [1.000001]
+    qqs = [1.00001]
     for q in qqs
         main(q=q)
     end

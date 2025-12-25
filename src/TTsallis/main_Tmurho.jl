@@ -43,7 +43,7 @@ end
 function main_Trho(q)
  
     TCEP_ab =  112.87451171875
-    ints = get_nodes(300, nodes2=300)
+    ints = get_nodes_hard(128, 256;IR=20.0)
     
     T1s = range(TCEP_ab, 112.80, length=5)
     T2s = range(112.80, 110.0, length=10)
@@ -53,13 +53,14 @@ function main_Trho(q)
 
     Ts = unique(vcat(T1s, T2s, T3s))
 
-    Ts = [TCEP_ab]
-    rho1s = 3.00:-0.005:0.01
+    Ts = [124.0]
+    rho1s = 4.00:-0.01:0.01
     rho2s = [1e-8, 5e-8, 1e-7, 5e-7, 1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
    
     rhos = sort(vcat(rho1s, rho2s), rev=true)
-    
-    X00 = [-1.8,-1.8, -2.2, 0.01,0.01, 1200/hc]  # phi_u, phi_d, phi_s, Phi1, Phi2, muB
+    rhos = 0.01:0.1:4.00
+    #X00 = [-0.15223, -0.15223, -2.06936, 0.06216, 0.0775, 1000.25398/hc]  # phi_u, phi_d, phi_s, Phi1, Phi2, mu_B
+    X00 = [-1.8, -1.8, -2.2, 0.07309, 0.08945, 300/hc]
     lens = length(Ts) * length(rhos)
     data = zeros(lens, 9)  # T, rho_B, mu_B P, phi_u, phi_d, phi_s, Phi1, Phi2
    

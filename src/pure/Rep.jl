@@ -166,20 +166,15 @@ function trans_eff(X0, T, mu, ints)
     tau_val = tau(T, mu/3)
     masses = Mass(phi)
     eta = 0.0
+    sigma_el =0.0
     muq = mu / 3.0
     p2, w2 = ints[2]
-        # 指数变换: p_new = -log(1 - p)
-    p_transformed = -log.(1.0 .- p2)
-    
-    # Jacobian: dp_new/dp = 1/(1-p)
-    jacobian = 1.0 ./ (1.0 .- p2)
-    
+    e_quark = [2/3, -1/3, -1/3]  # 夸克电荷数组
 
-    w_transformed = w2 .* jacobian .* p_transformed.^2
     for flavor = 1:3
 
       
-        E = sqrt.(p_transformed.^2 .+ masses[flavor]^2)
+        E = sqrt.(p2.^2 .+ masses[flavor]^2)
         
         # 夸克分布函数 f⁰(1-f⁰)
         f_q = quark_distribution.(E, muq, T, Phi1, Phi2)
@@ -188,10 +183,15 @@ function trans_eff(X0, T, mu, ints)
         f_factor = f_q .* (1 .- f_q) .+ f_qbar .* (1 .- f_qbar)
         
 
-        integrand = p_transformed.^4 ./ E.^2 .* f_factor .* w_transformed  # 积分测度包含于w中
-        eta += sum(integrand)
+        integrand_eta = p2.^4 ./ E.^2 .* f_factor .* w2  # 积分测度包含于w中
+
+        integrand_sigma = e_quark[flavor]^2 * p2.^2 ./ E.^2 .* f_factor .* w2
+
+        eta += sum(integrand_eta)
+        sigma_el += sum(integrand_sigma)
     end
     eta *= 6*tau_val/(15*T)
+    sigma_el *= 6*tau_val/(3*T)
 
-    return [T*197.33, mu*197.33, eta]
+    return [T*197.33, mu*197.33, eta, sigma_el/T]
 end

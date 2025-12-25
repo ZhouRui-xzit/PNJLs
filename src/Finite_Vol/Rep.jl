@@ -95,14 +95,11 @@ end
 
 
 
-
-
-
-function alpha_S(T, mu)
+function alpha_S(T, mu;Lambda_T=92/hc)
     # 定义 Log 的参数 L，避免重复书写和计算，减少出错概率
     # 公式中是对数内的项： (T/Lambda_T) * sqrt(1 + (mu/(pi*T))^2)
     # 注意：T 和 mu 的单位必须与 Lambda_T 一致 (推荐都用 fm^-1)
-    
+  
     L_arg = (T / Lambda_T) * sqrt(1 + (mu / (pi * T))^2)
     L = log(L_arg)
     
@@ -121,8 +118,8 @@ function alpha_S(T, mu)
     return term1 * term2
 end
 
-function tau(T, mu)
-    alphas = alpha_S(T, mu)
+function tau(T, mu;Lambda_T=92/hc)
+    alphas = alpha_S(T, mu;Lambda_T=Lambda_T)
     
     # 按照公式 (53)
     # 分母 = 5.1 * T * alpha^2 * log(1/alpha) * (1 + 0.12*(2Nf + 1))
@@ -147,20 +144,22 @@ end
 
 
 
-function trans_eff(X0, T, mu, ints)
+function trans_eff(X0, T, mu, ints;Lambda_T=92/hc)
     phi = X0[1:3]
     Phi1 = X0[4]
     Phi2 = X0[5]
-    tau_val = tau(T, mu/3)
+    tau_val = tau(T, mu/3;Lambda_T=Lambda_T)
     masses = Mass(phi)
     eta = 0.0
+    sigma_el =0.0
     muq = mu / 3.0
+    p2, w2 = ints[2]
+    e_quark = [2/3, -1/3, -1/3]  # 夸克电荷数组
+
     for flavor = 1:3
 
-        thermal_idx = 2*flavor       # 热节点索引：2,4,6
-        p_therm, w_therm = ints[thermal_idx] # 当前味道夸克的有限温度积分节点
-        # 计算能量（每个动量对应）
-        E = sqrt.(p_therm.^2 .+ masses[flavor]^2)
+      
+        E = sqrt.(p2.^2 .+ masses[flavor]^2)
         
         # 夸克分布函数 f⁰(1-f⁰)
         f_q = quark_distribution.(E, muq, T, Phi1, Phi2)
@@ -169,10 +168,15 @@ function trans_eff(X0, T, mu, ints)
         f_factor = f_q .* (1 .- f_q) .+ f_qbar .* (1 .- f_qbar)
         
 
-        integrand = p_therm.^4 ./ E.^2 .* f_factor .* w_therm  # 积分测度包含于w中
-        eta += sum(integrand)
+        integrand_eta = p2.^4 ./ E.^2 .* f_factor .* w2  # 积分测度包含于w中
+
+        integrand_sigma = e_quark[flavor]^2 * p2.^2 ./ E.^2 .* f_factor .* w2
+
+        eta += sum(integrand_eta)
+        sigma_el += sum(integrand_sigma)
     end
     eta *= 6*tau_val/(15*T)
+    sigma_el *= 6*tau_val/(3*T)
 
-    return [T*197.33, mu*197.33, eta]
+    return [T*197.33, mu*197.33, eta, sigma_el/T]
 end
